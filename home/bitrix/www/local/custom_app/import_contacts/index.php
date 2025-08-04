@@ -8,202 +8,312 @@ require_once 'Settings.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Импорт контактов</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+        * {
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            line-height: 1.6;
+            color: #333;
+        }
+        
         .container {
             background: white;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
         }
+        
         h1 {
-            color: #333;
+            color: #2c3e50;
             text-align: center;
             margin-bottom: 30px;
+            font-size: 1.8em;
+            font-weight: 600;
         }
+        
         .form-group {
             margin-bottom: 20px;
         }
+        
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
+            font-weight: 500;
+            color: #495057;
+            font-size: 1em;
         }
+        
         input[type="file"] {
             width: 100%;
-            padding: 10px;
-            border: 2px dashed #ddd;
-            border-radius: 4px;
-            background-color: #fafafa;
+            padding: 15px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #495057;
         }
+        
+        input[type="file"]:hover {
+            border-color: #2196F3;
+            background-color: #f0f8ff;
+        }
+        
         button {
-            background-color: #007bff;
+            background-color: #2196F3;
             color: white;
             padding: 12px 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 500;
             width: 100%;
             margin-top: 10px;
+            transition: background-color 0.2s ease;
         }
+        
         button:disabled {
-            background-color: #ccc;
+            background-color: #6c757d;
             cursor: not-allowed;
         }
+        
         button:hover:not(:disabled) {
-            background-color: #0056b3;
+            background-color: #1976D2;
         }
+        
         .file-info {
             margin-top: 10px;
-            padding: 10px;
-            background-color: #e9ecef;
-            border-radius: 4px;
+            padding: 15px;
+            background-color: #d4edda;
+            border-radius: 6px;
             display: none;
+            border-left: 4px solid #28a745;
+            font-size: 14px;
         }
+        
         .error {
-            color: #dc3545;
+            color: #721c24;
+            background-color: #f8d7da;
+            padding: 12px;
+            border-radius: 6px;
             margin-top: 10px;
+            border-left: 4px solid #dc3545;
+            font-size: 14px;
         }
+        
         .success {
-            color: #28a745;
+            color: #155724;
+            background-color: #d4edda;
+            padding: 12px;
+            border-radius: 6px;
             margin-top: 10px;
+            border-left: 4px solid #28a745;
+            font-size: 14px;
         }
+        
         .progress-container {
             margin-top: 20px;
             display: none;
         }
+        
         .progress-bar {
             width: 100%;
-            height: 30px;
+            height: 24px;
             background-color: #e9ecef;
-            border-radius: 15px;
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
+        
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #007bff, #0056b3);
+            background-color: #2196F3;
             width: 0%;
             transition: width 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: bold;
+            font-weight: 500;
+            font-size: 12px;
         }
+        
         .progress-info {
             background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #007bff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
         }
+        
+        .progress-info h3 {
+            color: #495057;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+        
         .progress-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
         }
+        
         .stat-item {
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
             border: 1px solid #dee2e6;
         }
+        
         .stat-label {
             font-size: 12px;
             color: #6c757d;
             margin-bottom: 5px;
+            font-weight: 500;
         }
+        
         .stat-value {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 600;
             color: #495057;
         }
+        
         .import-log {
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
+            background-color: #f8f9fa;
+            color: #495057;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
             font-size: 12px;
-            margin-top: 10px;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
         }
+        
         .warning-block {
             background-color: #fff3cd;
             border: 1px solid #ffeaa7;
             border-radius: 8px;
             padding: 20px;
-            margin-bottom: 25px;
-            border-left: 4px solid #f39c12;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
         }
+        
         .warning-block h3 {
             color: #856404;
             margin-top: 0;
             margin-bottom: 15px;
-            font-size: 18px;
+            font-size: 1.1em;
+            font-weight: 500;
         }
+        
         .warning-block p {
             color: #856404;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             line-height: 1.5;
+            font-size: 14px;
         }
+        
         .columns-list {
-            background-color: #ffffff;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
             padding: 15px;
             margin: 10px 0;
         }
+        
         .columns-list h4 {
             margin-top: 0;
             margin-bottom: 10px;
             color: #495057;
-            font-size: 16px;
+            font-size: 1em;
+            font-weight: 500;
         }
+        
         .columns-list ol {
             margin: 0;
             padding-left: 20px;
         }
+        
         .columns-list li {
             padding: 3px 0;
             color: #495057;
+            font-size: 14px;
         }
+        
         .columns-list li.empty-column {
             color: #6c757d;
             font-style: italic;
         }
+        
         .toggle-details {
-            background: #007bff;
-            border: 1px solid #007bff;
+            background-color: #2196F3;
+            border: none;
             color: white;
             text-decoration: none;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 500;
             padding: 8px 16px;
             margin-top: 10px;
             border-radius: 4px;
-            transition: all 0.3s ease;
+            transition: background-color 0.2s ease;
+            width: auto;
         }
+        
         .toggle-details:hover {
-            background: #0056b3;
-            border-color: #0056b3;
-            transform: translateY(-1px);
+            background-color: #1976D2;
         }
+        
         .warning {
             color: #856404;
             background-color: #fff3cd;
             border: 1px solid #ffeaa7;
-            border-radius: 4px;
+            border-radius: 6px;
             padding: 15px;
             margin-top: 10px;
+            border-left: 4px solid #ffc107;
+            font-size: 14px;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .progress-stats {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 8px;
+            }
+            
+            .stat-item {
+                padding: 12px;
+            }
+            
+            .stat-value {
+                font-size: 18px;
+            }
         }
     </style>
 </head>

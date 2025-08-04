@@ -6,6 +6,8 @@ class Settings
     // Необходимо для исключения дубликатов при повторном импорте,
     // если у контакта нет телефона и Email
     public const UF_CONTACT_INN_COMPANY = 'UF_CRM_1753953016';
+
+    // Этот порядок используется в UploadContacts;
     public const AR_FIELDS = [
         'Контрагент',
         'ИНН',
