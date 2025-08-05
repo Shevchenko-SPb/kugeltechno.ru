@@ -387,6 +387,7 @@ class UploadContacts
         if(!$data) {
             return [];
         }
+        $data = ltrim($data);
         $hasPlus = $data[0] === '+';
         $clearPhone = preg_replace('/[^0-9]/', '', $data);
         // телефон не может начинаться с 0
@@ -432,6 +433,9 @@ class UploadContacts
                 }
                 return [$fullNum];
             }
+        }
+        if($hasPlus) {
+            $clearPhone = '+'.$clearPhone;
         }
         return [$clearPhone];
     }
