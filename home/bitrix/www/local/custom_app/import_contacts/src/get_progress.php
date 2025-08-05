@@ -2,6 +2,21 @@
 header('Content-Type: application/json; charset=utf-8');
 session_start();
 
+// Получаем userId из GET запроса
+if (!isset($_GET['user_id']) || empty($_GET['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Авторизация в битриксе истекла. Обновите страницу'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$userId = intval($_GET['user_id']);
+
+// Инициализация Битрикса и авторизация
+require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_before.php");
+
+// Подключаем AuthController и выполняем авторизацию
+require_once dirname(__DIR__) . '/lib/AuthController.php';
+AuthController::login($userId);
+
 // Функция для отправки JSON ответа
 function sendResponse($success, $message, $data = null) {
     $response = [

@@ -2,6 +2,21 @@
 header('Content-Type: application/json; charset=utf-8');
 session_start();
 
+// Получаем userId из POST запроса
+if (!isset($_POST['user_id']) || empty($_POST['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Авторизация в битриксе истекла. Обновите страницу'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$userId = intval($_POST['user_id']);
+
+// Инициализация Битрикса и авторизация
+require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_before.php");
+
+// Подключаем AuthController и выполняем авторизацию
+require_once dirname(__DIR__) . '/lib/AuthController.php';
+AuthController::login($userId);
+
 // Подключаем автолоадер для всех классов из lib
 require_once dirname(__DIR__) . '/autoloader.php';
 
@@ -87,6 +102,17 @@ try {
         $progressData['contacts_upload_error_data'] = array_merge(
             $progressData['contacts_upload_error_data'],
             $result['contacts_upload_error_data']
+        );
+    }
+    
+    // Добавляем лог ошибок, если есть
+    if (!empty($result['contacts_upload_error_log'])) {
+        if (!isset($progressData['contacts_upload_error_log'])) {
+            $progressData['contacts_upload_error_log'] = [];
+        }
+        $progressData['contacts_upload_error_log'] = array_merge(
+            $progressData['contacts_upload_error_log'],
+            $result['contacts_upload_error_log']
         );
     }
     
@@ -190,10 +216,22 @@ function cleanupOldErrorFiles($tempDir) {
     }
     
     $files = glob($tempDir . '/import_errors_*.xlsx');
+    $logFiles = glob($tempDir . '/import_error_log_*.txt');
     $currentTime = time();
     $maxAge = 604800; // 7 дней в секундах
     
+    // Удаляем старые файлы с ошибками
     foreach ($files as $file) {
+        if (is_file($file)) {
+            $fileTime = filemtime($file);
+            if (($currentTime - $fileTime) > $maxAge) {
+                unlink($file);
+            }
+        }
+    }
+    
+    // Удаляем старые файлы с логами
+    foreach ($logFiles as $file) {
         if (is_file($file)) {
             $fileTime = filemtime($file);
             if (($currentTime - $fileTime) > $maxAge) {
