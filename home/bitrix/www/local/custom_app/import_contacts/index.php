@@ -1,4 +1,13 @@
 <?php
+require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_before.php");
+global $USER;
+$isAdmin = $USER->IsAdmin();
+$userId = $USER->GetID();
+
+// Подключаем AuthController и выполняем авторизацию
+require_once 'lib/AuthController.php';
+AuthController::login($userId);
+
 require_once 'Settings.php';
 ?>
 <!DOCTYPE html>
@@ -277,6 +286,14 @@ require_once 'Settings.php';
             background-color: #1976D2;
         }
         
+        .download-docs-btn {
+            background-color: #28a745 !important;
+        }
+        
+        .download-docs-btn:hover {
+            background-color: #218838 !important;
+        }
+        
         .warning {
             color: #856404;
             background-color: #fff3cd;
@@ -325,9 +342,14 @@ require_once 'Settings.php';
         <div class="warning-block">
             <h3>⚠️ Важно! Порядок столбцов в Excel файле</h3>
             
-            <button type="button" class="toggle-details" onclick="toggleColumnOrder()">
-                <span id="toggleOrderText">📋 Показать подробности</span>
-            </button>
+            <div style="margin-bottom: 15px;">
+                <button type="button" class="toggle-details download-docs-btn" onclick="downloadDocumentation()" style="margin-right: 10px;">
+                    📄 Скачать описание работы
+                </button>
+                <button type="button" class="toggle-details" onclick="toggleColumnOrder()">
+                    <span id="toggleOrderText">📋 Показать описание Excel файла</span>
+                </button>
+            </div>
             
             <div id="columnOrderDetails" style="display: none; margin-top: 15px;">
                 <p><strong>Столбцы в вашем Excel файле должны быть расположены строго в определенном порядке.</strong></p>
@@ -423,6 +445,9 @@ require_once 'Settings.php';
     </div>
 
     <script>
+        // ID пользователя для авторизации
+        const userId = <?php echo $userId; ?>;
+        
         const fileInput = document.getElementById('fileInput');
         const uploadBtn = document.getElementById('uploadBtn');
         const fileInfo = document.getElementById('fileInfo');
@@ -505,6 +530,7 @@ require_once 'Settings.php';
             
             const formData = new FormData();
             formData.append('session_id', currentSessionId);
+            formData.append('user_id', userId);
             
             fetch('src/process_batch.php', {
                 method: 'POST',
@@ -524,19 +550,20 @@ require_once 'Settings.php';
                         
                         // Показываем итоговое сообщение
                         let finalMessage = '<div class="success">Импорт контактов завершен!</div>';
-                        finalMessage += `<div style="margin-top: 10px;">`;
-                        finalMessage += `Обработано контактов: ${data.data.processed_contacts}<br>`;
-                        finalMessage += `Добавлено контактов: ${data.data.contacts_upload_count}<br>`;
-                        finalMessage += `Обновлено контактов: ${data.data.contacts_updated_count}<br>`;
-                        finalMessage += `Добавлено компаний: ${data.data.companies_upload_count}<br>`;
                         if (data.data.contacts_upload_error_count > 0) {
-                            finalMessage += `Ошибок: ${data.data.contacts_upload_error_count}<br>`;
-                            finalMessage += `<button onclick="downloadErrors('${currentSessionId}')" style="margin-top: 10px; background-color: #dc3545; padding: 8px 16px; border: none; border-radius: 4px; color: white; cursor: pointer;">Скачать файл с пропущенными контактами</button><br>`;
+                            finalMessage += `<div style="margin-top: 10px;">`;
+                            finalMessage += `<button onclick="downloadErrors('${currentSessionId}')" style="margin-top: 10px; margin-right: 10px; background-color: #dc3545; padding: 8px 16px; border: none; border-radius: 4px; color: white; cursor: pointer;">Скачать файл с пропущенными контактами</button>`;
+                            
+                            // Проверяем, есть ли лог ошибок для скачивания
+                            if (data.data.contacts_upload_error_log && data.data.contacts_upload_error_log.length > 0) {
+                                finalMessage += `<button onclick="downloadErrorLog('${currentSessionId}')" style="margin-top: 10px; background-color: #6c757d; padding: 8px 16px; border: none; border-radius: 4px; color: white; cursor: pointer;">Скачать лог ошибок</button>`;
+                            }
+                            
+                            finalMessage += `</div>`;
                         }
-                        finalMessage += `</div>`;
                         messageDiv.innerHTML = finalMessage;
                     } else {
-                        addLogEntry(`Обработан батч ${data.data.current_batch}/${data.data.total_batches}`);
+                        addLogEntry(`Обработано контактов ${data.data.processed_contacts} из ${data.data.total_contacts}`);
                     }
                 } else {
                     addLogEntry('Ошибка при обработке батча: ' + (data.message || 'Неизвестная ошибка'));
@@ -552,7 +579,7 @@ require_once 'Settings.php';
         function checkProgress() {
             if (!currentSessionId) return;
             
-            fetch(`src/get_progress.php?session_id=${currentSessionId}`)
+            fetch(`src/get_progress.php?session_id=${currentSessionId}&user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.data) {
@@ -603,6 +630,7 @@ require_once 'Settings.php';
             
             // Отправляем форму
             const formData = new FormData(this);
+            formData.append('user_id', userId);
             
             uploadBtn.disabled = true;
             uploadBtn.textContent = 'Подготовка...';
@@ -668,12 +696,31 @@ require_once 'Settings.php';
             }
             
             // Создаем ссылку для скачивания
-            const downloadUrl = `src/download_errors.php?session_id=${sessionId}`;
+            const downloadUrl = `src/download_errors.php?session_id=${sessionId}&user_id=${userId}`;
             
             // Создаем временную ссылку и кликаем по ней
             const link = document.createElement('a');
             link.href = downloadUrl;
             link.download = `import_errors_${sessionId}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Функция для скачивания лога ошибок
+        function downloadErrorLog(sessionId) {
+            if (!sessionId) {
+                alert('Ошибка: не найден ID сессии');
+                return;
+            }
+            
+            // Создаем ссылку для скачивания
+            const downloadUrl = `src/download_error_log.php?session_id=${sessionId}&user_id=${userId}`;
+            
+            // Создаем временную ссылку и кликаем по ней
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `import_error_log_${sessionId}.txt`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -686,10 +733,10 @@ require_once 'Settings.php';
             
             if (orderDetails.style.display === 'none') {
                 orderDetails.style.display = 'block';
-                toggleOrderText.textContent = '📋 Скрыть подробности';
+                toggleOrderText.textContent = '📋 Скрыть описание';
             } else {
                 orderDetails.style.display = 'none';
-                toggleOrderText.textContent = '📋 Показать подробности';
+                toggleOrderText.textContent = '📋 Показать описание Excel файла';
             }
         }
         
@@ -719,6 +766,42 @@ require_once 'Settings.php';
             messageDiv.innerHTML = '<div class="warning">Импорт начат несмотря на предупреждения о столбцах. Внимательно проверьте результат!</div>';
             
             startImport(sessionId);
+        }
+        
+        // Функция для скачивания документации
+        function downloadDocumentation() {
+            // Сначала проверяем доступность файла
+            fetch('src/download_documentation.php', { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    // Файл доступен, начинаем скачивание
+                    const downloadUrl = 'src/download_documentation.php';
+                    
+                    // Создаем временную ссылку и кликаем по ней
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = 'Описание работы Импорта контактов.docx';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else if (response.status === 404) {
+                    // Файл не найден, открываем страницу с инструкцией
+                    window.open('src/download_documentation.php', '_blank');
+                } else {
+                    alert('Ошибка при скачивании документации. Попробуйте позже.');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking documentation file:', error);
+                // В случае ошибки сети все равно пытаемся скачать
+                const downloadUrl = 'src/download_documentation.php';
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
         }
     </script>
 </body>

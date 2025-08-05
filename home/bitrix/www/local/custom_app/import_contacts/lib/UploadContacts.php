@@ -1,5 +1,4 @@
 <?php
-require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
 //require_once('./../Settings.php'); // Удалить из продакшена
 use \Bitrix\Main\Loader;
 use Bitrix\Crm\Service\Container;
@@ -31,6 +30,7 @@ class UploadContacts
             // Проверяем на наличие ИНН компании
             if(empty($companyINN)) {
                 $countErrors++;
+                $errorsLog[] = 'Загрузка контакта прервана. Не указан ИНН компании. Имя компании ' . $companyName;
                 $errorData[] = $contact;
                 continue;
             }

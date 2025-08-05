@@ -2,6 +2,21 @@
 header('Content-Type: application/json; charset=utf-8');
 session_start();
 
+// Получаем userId из POST запроса
+if (!isset($_POST['user_id']) || empty($_POST['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Авторизация в битриксе истекла. Обновите страницу'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$userId = intval($_POST['user_id']);
+
+// Инициализация Битрикса и авторизация
+require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_before.php");
+
+// Подключаем AuthController и выполняем авторизацию
+require_once 'lib/AuthController.php';
+AuthController::login($userId);
+
 // Подключаем автолоадер для всех классов из lib
 require_once 'autoloader.php';
 require_once 'Settings.php';
@@ -345,6 +360,7 @@ $progressData = [
     'companies_upload_count' => 0,
     'contacts_upload_error_count' => 0,
     'contacts_upload_error_data' => [],
+    'contacts_upload_error_log' => [],
     'error_file' => null
 ];
 
