@@ -1,5 +1,6 @@
 <?php
-//require_once('./../Settings.php'); // Удалить из продакшена
+require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+require_once('./../Settings.php'); // Удалить из продакшена
 use \Bitrix\Main\Loader;
 use Bitrix\Crm\Service\Container;
 
@@ -25,20 +26,36 @@ class UploadContacts
         foreach ($contacts as $contact) {
             // Порядок прописан в Settings;
             $companyName = $contact[0];
+            if($companyName) {
+                $companyName = ltrim($companyName);
+            }
             $companyINN = $contact[1];
+            $country = $contact[2];
+
 
             // Проверяем на наличие ИНН компании
-            if(empty($companyINN)) {
+            if(empty($companyINN) && empty($companyName)) {
+                // Проверяем по названию
                 $countErrors++;
                 $errorsLog[] = 'Загрузка контакта прервана. Не указан ИНН компании. Имя компании ' . $companyName;
                 $errorData[] = $contact;
                 continue;
             }
             // Проверяем на наличие компании по ИНН
-            $companyId = $this->getCompanyIDByInn($companyINN);
+            if($companyINN) {
+                $companyId = $this->getCompanyIDByInn($companyINN);
+            }
+            if(empty($companyINN)) {
+                // Проверяем по названию
+                $companyId = $this->getCompanyIDByTitle($companyName);
+            }
             if(!$companyId) {
                 // Если компания не найдена, то создаём её
-                $rs = $this->createCompany($companyINN, $companyName);
+                if(empty($companyINN)) {
+                    // Проверяем по названию
+                    $companyINN = '12345678910';
+                }
+                $rs = $this->createCompany($companyINN, $companyName, $country);
                 $companyId = $rs['id'];
                 if(!$companyId) {
                     $countErrors++;
@@ -51,6 +68,8 @@ class UploadContacts
 
             $data = $this->getFields($contact, $companyId, $companyINN);
             $email = $data['email'];
+
+            return $data;
 
             $contactId = null;
 
@@ -272,20 +291,20 @@ class UploadContacts
             'email' => null,
         ];
 
-        $lastName = $contact[3];
-        $name = $contact[4];
-        $secondName = $contact[5];
-        $post = $contact[6];
-        $workPhones = $contact[7];
-        $mobilePhones = $contact[10];
+        $fullName = $contact[3];
+        $post = $contact[4];
+        $workPhones = $contact[5];
+        $mobilePhones = $contact[6];
+
+        $name = $this->implodeFullName($fullName);
 
         $result['fields'] = [
             'ASSIGNED_BY_ID' => 1, // Обязательно поле
             'CREATED_BY' => 1, // Обязательно поле
             'UPDATED_BY' => 1, // Обязательно поле
-            'NAME' => $name ?: $lastName ?: $secondName ?: 'Без имени', // Имя
-            'LAST_NAME' => $lastName ?: '', // Фамилия
-            'SECOND_NAME' => $secondName ?: '', // Отчество
+            'NAME' => $name['name'] ?: 'Без имени', // Имя
+            'LAST_NAME' => $name['last_name'] ?: '', // Фамилия
+            'SECOND_NAME' => $name['second_name'] ?: '', // Отчество
             'POST' => $post ?: '', // Пост
             'COMPANY_ID' => $companyId ?: '', // Компания
             Settings::UF_CONTACT_INN_COMPANY => $companyINN ?: '', // ИНН Компании
@@ -299,9 +318,10 @@ class UploadContacts
             $result['fields']['SECOND_NAME'] = '';
         }
 
-        if($contact[11]) {
-            if(filter_var($contact[11], FILTER_VALIDATE_EMAIL)) {
-                $result['email'] = strtolower($contact[11]);
+        if($contact[7]) {
+            if(filter_var($contact[7], FILTER_VALIDATE_EMAIL)) {
+                $result['email'] = strtolower($contact[7]);
+                $result['fields']['HAS_EMAIL'] = 'Y';
             }
         }
         if($mobilePhones) {
@@ -309,6 +329,7 @@ class UploadContacts
             foreach ($arPhones as $phone) {
                 if($phone[0] == '+') {
                     $result['mobilePhones'][] = $phone;
+                    $result['fields']['HAS_PHONE'] = 'Y';
                 }
             }
         }
@@ -317,9 +338,36 @@ class UploadContacts
             foreach ($arPhones as $phone) {
                 if($phone[0] == '+') {
                     $result['workPhones'][] = $phone;
+                    $result['fields']['HAS_PHONE'] = 'Y';
                 }
             }
         }
+        return $result;
+    }
+
+    public function implodeFullName($fullName)
+    {
+        // examples $fullName:
+        // Sakina Zeynalova
+        // Meelis Kalamees
+        // Лущик Яков Филиппович
+        // Елисеев Владимир Сергеевич
+        // Лилия
+        // БЕРЕЗА АНАТОЛІЙ ВАЛЕНТИНОВИЧ
+        // Пётр
+        // Черненко Євген
+        // Головина Ирина
+        // Катина Н.А.
+        // Синькевич Светлана Яковлевна
+        // Красносельскстройматериалы - // невозможно определить имя
+        // Валентин Петрович
+
+        $result = [
+            'name' => '',
+            'last_name' => '',
+            'second_name' => ''
+        ];
+
         return $result;
     }
     public function getCompanyIDByInn($inn)
@@ -336,19 +384,51 @@ class UploadContacts
         }
         return null;
     }
-    public function createCompany($companyINN, $companyName)
+    public function getCompanyIDByTitle($title)
+    {
+        $filter = [
+            'TITLE' => $title . ', ИНН: 12345678910',
+        ];
+        $companies = $this->companyFactory->getItems([
+            'filter' => $filter,
+            'select' => ['ID']
+        ]);
+        foreach ($companies as $company) {
+            return $company->getId();
+        }
+        return null;
+    }
+    public function createCompany($companyINN, $companyName, $country)
     {
         if(!$companyName){
-            $companyName = "ИНН $companyINN";
+            $title = "ИНН: $companyINN";
+        } else {
+            $title = $companyName .", ИНН: $companyINN";
         }
-        // Создаём компанию
-        $company = $this->companyFactory->createItem([
-            'TITLE' => $companyName,
+        $fields = [
+            'TITLE' => $title,
             'UF_CRM_INN' => $companyINN,
             'ASSIGNED_BY_ID' => 1,
             'CREATED_BY' => 1,
             'UPDATED_BY' => 1,
-        ]);
+        ];
+        $userFields =  $this->companyFactory->getUserFieldsInfo();
+        if($country) {
+            if($UFCountry = $userFields[Settings::UF_COMPANY_COUNTRY]) {
+                if($items = $UFCountry['ITEMS']) {
+                    $country = mb_strtolower(str_replace(' ', '', $country), 'UTF-8');
+                    foreach ($items as $item) {
+                        $val = mb_strtolower(str_replace(' ', '', $item['VALUE']), 'UTF-8');
+                        if($val == $country) {
+                            $fields[Settings::UF_COMPANY_COUNTRY] = $item['ID'];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Создаём компанию
+        $company = $this->companyFactory->createItem($fields);
         // Сохраняем и получаем ID
         $result = $company->save();
 
@@ -360,7 +440,7 @@ class UploadContacts
         } else {
             return [
                 'id' => null,
-                'errors' => ["Создание компании ИНН $companyINN" => $result->getErrorMessages()]
+                'errors' => ["Создание компании ИНН $companyINN, Название $companyName" => $result->getErrorMessages()]
             ];
         }
     }
@@ -552,18 +632,27 @@ class UploadContacts
     }
 }
 
-//$data = [
-////    ['АРМАТОН ЗКПД ООО ТЕСТ', '8888888888888888888', '10', 'Шевченко', "Антон", "Александрович ТЕСТ", "Директор", "8 (938) 865 55 39; 8 (960) 471 59 90", "","","+79214204052 ; +78889958625","Shevchenko-SPb@yandex.ru"]
-//    ['АРМАТОН ЗКПД ООО ТЕСТ', '8888888888888888888', '10', 'Шевченко', "Антон11", "Александрович ТЕСТ", "Директор", "", "","","","Shevchenko-SPb@yandex.ru"]
-//];
+$data = [
+//    ['АРМАТОН ЗКПД ООО ТЕСТ', '8888888888888888888', '10', 'Шевченко', "Антон", "Александрович ТЕСТ", "Директор", "8 (938) 865 55 39; 8 (960) 471 59 90", "","","+79214204052 ; +78889958625","Shevchenko-SPb@yandex.ru"]
+    [
+        'Chashioglu RP LLC', // Контрагент
+        '', // ИНН
+        'Азербайджан', // Страна
+        'ULFAT HUSEYNOV', // ФИО
+        "Director General", // Роль
+        "", // Телефон
+        "+994 50 221 9959", // Мобильный
+        "husulf@gmail.com" // Имейл
+    ]
+];
 //
 //
-//$class = new UploadContacts();
+$class = new UploadContacts();
 //$contactId = 14870;
 ////$email = 'test@test.ru';
 ////$data = '';
-//echo '<pre>';
-////print_r($class->getContactById($contactId));
-////print_r($class->getContactIdByEmail($email));
-//print_r($class->run($data));
-//echo '</pre>';
+echo '<pre>';
+//print_r($class->getContactById($contactId));
+//print_r($class->getContactIdByEmail($email));
+print_r($class->run($data));
+echo '</pre>';
