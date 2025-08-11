@@ -1,5 +1,5 @@
 <?php
-//require_once('./../Settings.php'); // Удалить из продакшена
+
 use \Bitrix\Main\Loader;
 use Bitrix\Crm\Service\Container;
 
@@ -7,12 +7,16 @@ Loader::IncludeModule('crm');
 class UploadContacts
 {
     public $contactFactory;
+    public $contactUFs;
     public $companyFactory;
+    public $companyUFs;
 
     function __construct()
     {
         $this->contactFactory = Container::getInstance()->getFactory(CCrmOwnerType::Contact);
+        $this->contactUFs = $this->contactFactory->getUserFieldsInfo();
         $this->companyFactory = Container::getInstance()->getFactory(CCrmOwnerType::Company);
+        $this->companyUFs = $this->companyFactory->getUserFieldsInfo();
     }
     public function run($contacts)
     {
@@ -25,20 +29,36 @@ class UploadContacts
         foreach ($contacts as $contact) {
             // Порядок прописан в Settings;
             $companyName = $contact[0];
+            if($companyName) {
+                $companyName = ltrim($companyName);
+            }
             $companyINN = $contact[1];
+            $country = $contact[2];
+
 
             // Проверяем на наличие ИНН компании
-            if(empty($companyINN)) {
+            if(empty($companyINN) && empty($companyName)) {
+                // Проверяем по названию
                 $countErrors++;
                 $errorsLog[] = 'Загрузка контакта прервана. Не указан ИНН компании. Имя компании ' . $companyName;
                 $errorData[] = $contact;
                 continue;
             }
             // Проверяем на наличие компании по ИНН
-            $companyId = $this->getCompanyIDByInn($companyINN);
+            if($companyINN) {
+                $companyId = $this->getCompanyIDByInn($companyINN);
+            }
+            if(empty($companyINN)) {
+                // Проверяем по названию
+                $companyId = $this->getCompanyIDByTitle($companyName);
+            }
             if(!$companyId) {
                 // Если компания не найдена, то создаём её
-                $rs = $this->createCompany($companyINN, $companyName);
+                if(empty($companyINN)) {
+                    // Проверяем по названию
+                    $companyINN = '1234567890';
+                }
+                $rs = $this->createCompany($companyINN, $companyName, $country);
                 $companyId = $rs['id'];
                 if(!$companyId) {
                     $countErrors++;
@@ -50,6 +70,8 @@ class UploadContacts
             }
 
             $data = $this->getFields($contact, $companyId, $companyINN);
+//            return $data;
+
             $email = $data['email'];
 
             $contactId = null;
@@ -58,11 +80,19 @@ class UploadContacts
             if($email) {
                 $contactId = $this->getContactIdByEmail($email);
             }
+
+
+//            return $data;
             // Ищем контакт по телефонам
             if(!$contactId) {
-                $contactId = $this->getContactByData($data, $companyINN);
+                if(!$email) {
+                    $contactId = $this->getContactByData($data);
+                }
             }
+//            return $contactId;
+
             // Обновляем поля контакта если такой найден
+
             if($contactId) {
                 $rs = $this->updateContact($contactId, $data['fields']);
                 if(!$rs['id']) {
@@ -102,9 +132,6 @@ class UploadContacts
         // Ищем контакт по мобильным телефонам
         if($phones = $data['mobilePhones']) {
             foreach ($phones as $phone) {
-                if($phone[0] != '+') {
-                    continue;
-                }
                 $num = str_replace('+','', $phone);
                 $filter = [
                     'ENTITY_ID' => 'CONTACT',
@@ -113,7 +140,14 @@ class UploadContacts
                 $rs = $this->getFieldMultiByFilter($filter);
                 while ($el = $rs->fetch()) {
                     if($el['ENTITY_ID'] === 'CONTACT' && $el['TYPE_ID'] == 'PHONE') {
-                        return $el['ELEMENT_ID'];
+                        $name = $data['fields']['NAME'];
+                        $elId = $el['ELEMENT_ID'];
+                        $contact = $this->contactFactory->getItem($elId);
+                        if($contact) {
+                            if($name == $contact->getName()) {
+                                return $elId;
+                            }
+                        }
                     }
                 }
             }
@@ -121,30 +155,44 @@ class UploadContacts
         // Проверяем по первому рабочему номеру
         if($phones = $data['workPhones']) {
             $phone = $phones[0];
-            if($phone[0] === '+') {
-                $num = str_replace('+','', $phone);
-                $filter = [
-                    'ENTITY_ID' => 'CONTACT',
-                    'VALUE' => "%$num%",
-                ];
-                $rs = $this->getFieldMultiByFilter($filter);
-                while ($el = $rs->fetch()) {
-                    if($el['ENTITY_ID'] === 'CONTACT' && $el['TYPE_ID'] == 'PHONE') {
-                        return $el['ELEMENT_ID'];
+
+            $num = str_replace('+','', $phone);
+            $filter = [
+                'ENTITY_ID' => 'CONTACT',
+                'VALUE' => "%$num%",
+            ];
+            $rs = $this->getFieldMultiByFilter($filter);
+            while ($el = $rs->fetch()) {
+                if($el['ENTITY_ID'] === 'CONTACT' && $el['TYPE_ID'] == 'PHONE') {
+                    $name = $data['fields']['NAME'];
+                    $elId = $el['ELEMENT_ID'];
+                    $contact = $this->contactFactory->getItem($elId);
+                    if($contact) {
+                        if($name == $contact->getName()) {
+                            return $elId;
+                        }
                     }
                 }
             }
         }
-        // Ищем по совпадению ИНН и Имени
-        $items = $this->contactFactory->getItems([
-            'filter' => [
-                '=NAME' => $data['fields']['NAME'],
-                Settings::UF_CONTACT_INN_COMPANY => $data['fields'][Settings::UF_CONTACT_INN_COMPANY]
-            ],
-            'select' => ['ID']
-        ]);
-        if($items[0]){
-            return $items[0]->getId();
+        if(!$data['workPhones'] && !$data['mobilePhones']) {
+            $filter = [
+                'filter' => [
+                    '=NAME' => $data['fields']['NAME'],
+                    Settings::UF_CONTACT_INN_COMPANY => $data['fields'][Settings::UF_CONTACT_INN_COMPANY],
+                    'HAS_PHONE' => 'N',
+                    'HAS_EMAIL' => 'N',
+                ],
+                'select' => ['ID']
+            ];
+            if($data['fields']['COMPANY_ID']) {
+                $filter['filter']['COMPANY_ID'] = $data['fields']['COMPANY_ID'];
+            }
+            // Ищем по совпадению ИНН и Имени
+            $items = $this->contactFactory->getItems($filter);
+            if($items[0]){
+                return $items[0]->getId();
+            }
         }
         return null;
     }
@@ -221,7 +269,10 @@ class UploadContacts
             $data['fields']
         );
         // Сохраняем и получаем ID
-        $result = $contact->save();
+//        $result = $contact->save();
+
+        $operation = $this->contactFactory->getAddOperation($contact);
+        $result = $operation->launch();
 
         if ($result->isSuccess()) {
             $contactId = $contact->getId(); // Получаем ID созданной компании
@@ -251,7 +302,12 @@ class UploadContacts
             }
             $contact->set($code, $val);
         }
-        $result = $contact->save();
+
+//        $result = $contact->save();
+
+        $operation = $this->contactFactory->getUpdateOperation($contact);
+        $result = $operation->launch();
+
         if ($result->isSuccess()) {
             $contactId = $contact->getId(); // Получаем ID созданной компании
             return [
@@ -266,30 +322,84 @@ class UploadContacts
     }
     public function getFields($contact, $companyId, $companyINN)
     {
+        $contactUFs = $this->contactUFs;
+        $companyUFs = $this->companyUFs;
+
         $result = [
             'mobilePhones' => [],
             'workPhones' => [],
             'email' => null,
         ];
 
-        $lastName = $contact[3];
-        $name = $contact[4];
-        $secondName = $contact[5];
-        $post = $contact[6];
-        $workPhones = $contact[7];
-        $mobilePhones = $contact[10];
+        $fullName = $contact[3];
+        $post = $contact[4];
+        $workPhones = $contact[5];
+        $mobilePhones = $contact[6];
+
+        $name = $this->implodeFullName($fullName);
 
         $result['fields'] = [
             'ASSIGNED_BY_ID' => 1, // Обязательно поле
             'CREATED_BY' => 1, // Обязательно поле
             'UPDATED_BY' => 1, // Обязательно поле
-            'NAME' => $name ?: $lastName ?: $secondName ?: 'Без имени', // Имя
-            'LAST_NAME' => $lastName ?: '', // Фамилия
-            'SECOND_NAME' => $secondName ?: '', // Отчество
+            'NAME' => $name['name'] ?: 'Без имени', // Имя
+            'LAST_NAME' => $name['last_name'] ?: '', // Фамилия
+            'SECOND_NAME' => $name['second_name'] ?: '', // Отчество
             'POST' => $post ?: '', // Пост
             'COMPANY_ID' => $companyId ?: '', // Компания
-            Settings::UF_CONTACT_INN_COMPANY => $companyINN ?: '', // ИНН Компании
         ];
+
+        // Проверка пользовательских полей
+        if($contactUFs[Settings::UF_CONTACT_WORK_PHONE]) {
+            $result['fields'][Settings::UF_CONTACT_WORK_PHONE] = $workPhones ?: ''; // Рабочие телефоны;
+        }
+        if($contactUFs[Settings::UF_CONTACT_MOBILE_PHONE]) {
+            $result['fields'][Settings::UF_CONTACT_MOBILE_PHONE] = $mobilePhones ?: ''; // Мобильные телефоны;
+        }
+        // Получаем данные из компании
+        if($companyId) {
+            if($company = $this->companyFactory->getItem($companyId)) {
+                if($companyUFs[Settings::UF_COMPANY_COUNTRY]) {
+                    $items = $companyUFs[Settings::UF_COMPANY_COUNTRY]['ITEMS'];
+                    if($val = $company->get(Settings::UF_COMPANY_COUNTRY)) {
+                        foreach ($items as $item) {
+                            if(!$contactUFs[Settings::UF_CONTACT_COUNTRY]) {
+                                break;
+                            }
+                            if($item['ID'] == $val) {
+                                $result['fields'][Settings::UF_CONTACT_COUNTRY] = $item['VALUE'];
+                            }
+                        }
+                    }
+                }
+                if($companyUFs[Settings::UF_COMPANY_FED_REGION]) {
+                    $iblockId = $companyUFs[Settings::UF_COMPANY_FED_REGION]['SETTINGS']['IBLOCK_ID'];
+                    if($val = $company->get(Settings::UF_COMPANY_FED_REGION)) {
+                        $rs = CIBlockElement::GetList(
+                            [],
+                            [
+                                'IBLOCK_ID' => $iblockId,
+                                'ID' => $val
+                            ],
+                        );
+                       if($el = $rs->fetch()) {
+                           if($el['NAME']) {
+                               if($contactUFs[Settings::UF_CONTACT_FED_REGION]) {
+                                   $result['fields'][Settings::UF_CONTACT_FED_REGION] = $el['NAME'];
+                               }
+                           }
+                       }
+                    }
+                }
+                if($companyUFs['UF_CRM_INN']) {
+                    if($val = $company->get('UF_CRM_INN')) {
+                        if($contactUFs[Settings::UF_CONTACT_INN_COMPANY]) {
+                            $result['fields'][Settings::UF_CONTACT_INN_COMPANY] = $val ?: ''; // ИНН Компании;
+                        }
+                    }
+                }
+            }
+        }
 
         // Устраняем дублирование имён
         if($result['fields']['NAME'] === $result['fields']['LAST_NAME']) {
@@ -299,27 +409,111 @@ class UploadContacts
             $result['fields']['SECOND_NAME'] = '';
         }
 
-        if($contact[11]) {
-            if(filter_var($contact[11], FILTER_VALIDATE_EMAIL)) {
-                $result['email'] = strtolower($contact[11]);
+        if($contact[7]) {
+            if(filter_var($contact[7], FILTER_VALIDATE_EMAIL)) {
+                if(check_email($contact[7])) {
+                    $result['email'] = strtolower($contact[7]);
+                    $result['fields']['HAS_EMAIL'] = 'Y';
+                }
             }
         }
         if($mobilePhones) {
             $arPhones = $this->formatPhones($mobilePhones);
             foreach ($arPhones as $phone) {
-                if($phone[0] == '+') {
                     $result['mobilePhones'][] = $phone;
-                }
+                    $result['fields']['HAS_PHONE'] = 'Y';
             }
         }
         if($workPhones) {
             $arPhones = $this->formatPhones($workPhones);
             foreach ($arPhones as $phone) {
-                if($phone[0] == '+') {
                     $result['workPhones'][] = $phone;
-                }
+                    $result['fields']['HAS_PHONE'] = 'Y';
             }
         }
+        return $result;
+    }
+
+    public function implodeFullName($fullName)
+    {
+        $result = [
+            'name' => '',
+            'last_name' => '',
+            'second_name' => ''
+        ];
+        // Пути к справочникам (txt-файлы, по одному имени в строке)
+        $names = __DIR__ . '/names/russian_names.txt';
+        $surnames = __DIR__ . '/names/russian_surnames.txt';
+
+        // Функция для проверки наличия имени в справочнике
+        $isNameInDictionary = function($name, $filePath) {
+            if (!file_exists($filePath)) {
+                return false;
+            }
+            // Открываем файл и ищем имя (регистр не учитываем, убираем пробелы)
+            $handle = fopen($filePath, "r");
+            if ($handle) {
+                while (($line = fgets($handle)) !== false) {
+                    if (mb_strtolower(trim($line)) === mb_strtolower(trim($name))) {
+                        fclose($handle);
+                        return true;
+                    }
+                }
+                fclose($handle);
+            }
+            return false;
+        };
+        // Разбиваем строку на части
+        $parts = preg_split('/\s+/', trim($fullName));
+        $foundName = false;
+
+        // Пробуем найти имя
+        foreach ($parts as $key => $part) {
+            if ($isNameInDictionary($part, $names)) {
+                $result['name'] = $part;
+                $foundName = true;
+                unset($parts[$key]);
+                break;
+            }
+        }
+
+        // Ищем фамилию
+        foreach ($parts as $key => $part) {
+            if ($isNameInDictionary($part, $surnames)) {
+                $result['last_name'] = $part;
+                unset($parts[$key]);
+                break;
+            }
+        }
+
+        if(!$result['name'] && !$result['last_name']) {
+            $result['name'] = $fullName;
+            return $result;
+        }
+
+        // Оставшееся считаем отчеством (если есть)
+        $remaining = array_values($parts);
+        if (!$foundName && count($remaining) > 0) {
+            // Если имя не найдено, но есть хотя бы одна часть - она идёт в name
+            if(strlen($remaining[0]) == 6 &&
+                substr_count($remaining[0], '.') == 2) {
+                $result['name'] = $fullName;
+                $result['last_name'] = '';
+                return $result;
+            }
+            $result['name'] = $remaining[0];
+            if (count($remaining) > 1) {
+                // Если есть ещё части, вторую можно считать отчеством
+                $result['second_name'] = $remaining[1];
+            }
+        } else {
+            if (count($remaining) > 0)
+                foreach ($remaining as $part) {
+                    $result['second_name'] .= ' ' .$part;
+                }
+            $result['second_name'] = trim($result['second_name']);
+        }
+
         return $result;
     }
     public function getCompanyIDByInn($inn)
@@ -336,21 +530,55 @@ class UploadContacts
         }
         return null;
     }
-    public function createCompany($companyINN, $companyName)
+    public function getCompanyIDByTitle($title)
+    {
+        $filter = [
+            'TITLE' => $title . ', ИНН: 1234567890',
+        ];
+        $companies = $this->companyFactory->getItems([
+            'filter' => $filter,
+            'select' => ['ID']
+        ]);
+        foreach ($companies as $company) {
+            return $company->getId();
+        }
+    }
+    public function createCompany($companyINN, $companyName, $country)
     {
         if(!$companyName){
-            $companyName = "ИНН $companyINN";
+            $title = "ИНН: $companyINN";
+        } else {
+            $title = $companyName .", ИНН: $companyINN";
         }
-        // Создаём компанию
-        $company = $this->companyFactory->createItem([
-            'TITLE' => $companyName,
+        $fields = [
+            'TITLE' => $title,
             'UF_CRM_INN' => $companyINN,
             'ASSIGNED_BY_ID' => 1,
             'CREATED_BY' => 1,
             'UPDATED_BY' => 1,
-        ]);
+        ];
+        $userFields =  $this->companyFactory->getUserFieldsInfo();
+        if($country) {
+            if($UFCountry = $userFields[Settings::UF_COMPANY_COUNTRY]) {
+                if($items = $UFCountry['ITEMS']) {
+                    $country = mb_strtolower(str_replace(' ', '', $country), 'UTF-8');
+                    foreach ($items as $item) {
+                        $val = mb_strtolower(str_replace(' ', '', $item['VALUE']), 'UTF-8');
+                        if($val == $country) {
+                            $fields[Settings::UF_COMPANY_COUNTRY] = $item['ID'];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Создаём компанию
+        $company = $this->companyFactory->createItem($fields);
         // Сохраняем и получаем ID
-        $result = $company->save();
+//        $result = $company->save();
+
+        $operation = $this->companyFactory->getAddOperation($company);
+        $result = $operation->launch();
 
         if ($result->isSuccess()) {
             $companyId = $company->getId(); // Получаем ID созданной компании
@@ -360,27 +588,39 @@ class UploadContacts
         } else {
             return [
                 'id' => null,
-                'errors' => ["Создание компании ИНН $companyINN" => $result->getErrorMessages()]
+                'errors' => ["Создание компании ИНН $companyINN, Название $companyName" => $result->getErrorMessages()]
             ];
         }
     }
     public function getContactIdByEmail($email)
     {
-        $order = ['ID' => 'DESC'];
-        $filter = [
-            'TYPE_ID' => 'EMAIL',
-            'VALUE' => $email,
-        ];
-        $rs = CCrmFieldMulti::GetList(
-            $order,
-            $filter
-        );
+//        $order = ['ID' => 'DESC'];
+//        $filter = [
+//            'TYPE_ID' => 'EMAIL',
+//            'VALUE' => $email,
+//        ];
+//        $rs = CCrmFieldMulti::GetList(
+//            $order,
+//            $filter
+//        );
+//        while ($row = $rs->fetch()) {
+//            if($row['ENTITY_ID'] == 'CONTACT') {
+//                return $row['ELEMENT_ID'];
+//            }
+//        }
+//        return null;
+
+        global $DB;
+        $strSql = "
+			SELECT * FROM `b_crm_field_multi` WHERE `VALUE` LIKE '$email';";
+        $rs = $DB->Query($strSql);
         while ($row = $rs->fetch()) {
             if($row['ENTITY_ID'] == 'CONTACT') {
                 return $row['ELEMENT_ID'];
             }
         }
         return null;
+
     }
     public function formatPhones($data)
     {
@@ -412,7 +652,7 @@ class UploadContacts
         }
         // Массив с возможными разделителями
         $arSeparators = [
-            ';', '#', '/', 'д', 'в', ',', 'e', '*', ':'
+            ';', '#', '/', 'д', 'в', ',', 'e', '*', ':','int','ext'
         ];
         foreach ($arSeparators as $separator) {
             // Проверка разделителя номера с #
@@ -551,19 +791,3 @@ class UploadContacts
         return $clearPhone;
     }
 }
-
-//$data = [
-////    ['АРМАТОН ЗКПД ООО ТЕСТ', '8888888888888888888', '10', 'Шевченко', "Антон", "Александрович ТЕСТ", "Директор", "8 (938) 865 55 39; 8 (960) 471 59 90", "","","+79214204052 ; +78889958625","Shevchenko-SPb@yandex.ru"]
-//    ['АРМАТОН ЗКПД ООО ТЕСТ', '8888888888888888888', '10', 'Шевченко', "Антон11", "Александрович ТЕСТ", "Директор", "", "","","","Shevchenko-SPb@yandex.ru"]
-//];
-//
-//
-//$class = new UploadContacts();
-//$contactId = 14870;
-////$email = 'test@test.ru';
-////$data = '';
-//echo '<pre>';
-////print_r($class->getContactById($contactId));
-////print_r($class->getContactIdByEmail($email));
-//print_r($class->run($data));
-//echo '</pre>';
