@@ -50,7 +50,6 @@ class Company
                 continue;
             }
             $Checko = new \Checko();
-
             $res_checko = $Checko->getDataFromChecko($inn);
             if ($res_checko['meta']['status'] == 'error') {
                 $countErrors++;
@@ -69,13 +68,18 @@ class Company
                 $AMOUNT = intval($arItem['2110']);
                 $arAmountForLast3Year[$counter] = round($AMOUNT / 1000000);
                 $counter++;
-                $LastYearAmount = $AMOUNT;
             }
             $arAmountForLast3Year = array_slice($arAmountForLast3Year, -3);
             $company->set(Settings::UF_COMPANY_3_YEARS_REVENUE, implode(" || ", $arAmountForLast3Year));
-//            $company->set(Settings::UF_COMPANY_LAST_YEAR_REVENUE, (int)$arAmountForLast3Year[0] ?? 0);
+            $company->set(Settings::UF_COMPANY_INN, $inn);
             $company->set(Settings::UF_COMPANY_LAST_YEAR_REVENUE, (int)array_pop($arAmountForLast3Year) ?? 0);
-            $company->save();
+            $result = $company->save();
+            if ($result->isSuccess()) {
+                $countUpdatedRevenue++;
+            } else {
+                $countErrors++;
+                $errorsLog[] = ["Ошибка обновление компании id $companyId" => $result->getErrorMessages()];
+            }
         }
 
         return [
