@@ -88,7 +88,7 @@ $batchContacts = array_slice($allContacts, $startIndex, $batchSize);
 
 try {
     // Обрабатываем батч через BitrixController
-    $result = BitrixController::actionUploadContacts($batchContacts);
+    $result = BitrixController::actionUploadCompaniesRevenue($batchContacts);
     
     // Обновляем статистику
     $progressData['processed_contacts'] += count($batchContacts);
