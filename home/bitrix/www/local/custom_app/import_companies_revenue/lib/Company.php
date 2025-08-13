@@ -70,9 +70,20 @@ class Company
                 $counter++;
             }
             $arAmountForLast3Year = array_slice($arAmountForLast3Year, -3);
-            $company->set(Settings::UF_COMPANY_3_YEARS_REVENUE, implode(" || ", $arAmountForLast3Year));
+
+            $arAmountFormated = [];
+            foreach ($arAmountForLast3Year as $num) {
+                $arAmountFormated[] = $num ? number_format($num, 0, '', ' ') : '';
+            }
+            $lastYearAmount = (int)array_pop($arAmountForLast3Year);
+
+            if($arAmountFormated) {
+                $company->set(Settings::UF_COMPANY_3_YEARS_REVENUE, implode(" || ", $arAmountFormated));
+            }
             $company->set(Settings::UF_COMPANY_INN, $inn);
-            $company->set(Settings::UF_COMPANY_LAST_YEAR_REVENUE, (int)array_pop($arAmountForLast3Year) ?? 0);
+            if($lastYearAmount) {
+                $company->set(Settings::UF_COMPANY_LAST_YEAR_REVENUE, $lastYearAmount);
+            }
             $result = $company->save();
             if ($result->isSuccess()) {
                 $countUpdatedRevenue++;

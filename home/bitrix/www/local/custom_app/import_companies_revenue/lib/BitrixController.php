@@ -11,7 +11,7 @@ class BitrixController
         return $Company->uploadRevenue($arIds);
     }
 
-    public static function getAllCompaniesIds()
+    public static function getAllCompaniesIds($updateOnlyNewCompanies = true)
     {
         $factory = Container::getInstance()->getFactory(CCrmOwnerType::Company);
 
@@ -27,10 +27,17 @@ class BitrixController
             return ['alert_error' => 'Отсутствует пользовательское поле ' . Settings::UF_COMPANY_LAST_YEAR_REVENUE];
         }
 
-        $companies = $factory->getItems(
-            [
-                'select' => ['ID'],
-            ]);
+        $params = [
+            'select' => ['ID'],
+        ];
+
+        if($updateOnlyNewCompanies) {
+            $params['filter'] = [
+                Settings::UF_COMPANY_3_YEARS_REVENUE => false
+            ];
+        }
+
+        $companies = $factory->getItems($params);
         $arCompaniesIds = [];
         foreach ($companies as $company) {
             $arCompaniesIds[] = $company->getId();
