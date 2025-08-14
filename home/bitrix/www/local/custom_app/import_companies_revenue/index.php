@@ -95,6 +95,23 @@ require_once 'Settings.php';
             background-color: #1976D2;
         }
         
+        #pauseBtn {
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        #pauseBtn:hover:not(:disabled) {
+            background-color: #e0a800 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        }
+        
+        #pauseBtn[style*="background-color: #28a745"]:hover:not(:disabled) {
+            background-color: #218838 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
         .error {
             color: #721c24;
             background-color: #f8d7da;
@@ -243,7 +260,21 @@ require_once 'Settings.php';
             <p><strong>Внимание:</strong> Процесс может занять некоторое время в зависимости от количества компаний в системе.</p>
         </div>
         
+        <!-- Чекбокс для обновления данных -->
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+            <label style="display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #495057;">
+                <input type="checkbox" id="updateExistingCompanies" style="margin-right: 10px; transform: scale(1.2);">
+                Обновить данные ранее загруженных компаний
+            </label>
+            <div style="margin-top: 8px; font-size: 13px; color: #6c757d;">
+                Если выбрано - обновляются данные всех компаний. (Увеличение количество запросов может привести к увеличению стоимости загрузки сервиса checko.ru)
+                Если не выбрано - обрабатываются только компании с незаполненными полями об оборотах за 3 года.
+
+            </div>
+        </div>
+        
         <button id="startBtn" onclick="startRevenueUpload()">Начать загрузку оборотов компаний</button>
+        <button id="pauseBtn" onclick="togglePause()" style="display: none; background-color: #ffc107; margin-top: 10px;">Пауза</button>
         
         <div id="message"></div>
         
@@ -272,6 +303,14 @@ require_once 'Settings.php';
                         <div class="stat-label">Ошибок</div>
                         <div id="errorCount" class="stat-value">0</div>
                     </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Баланс checko.ru</div>
+                        <div id="balance" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Запросов сегодня</div>
+                        <div id="todayRequestCount" class="stat-value">0</div>
+                    </div>
                 </div>
                 
                 <div id="importLog" class="import-log"></div>
@@ -293,11 +332,15 @@ require_once 'Settings.php';
         const totalCompanies = document.getElementById('totalCompanies');
         const updatedCompanies = document.getElementById('updatedCompanies');
         const errorCount = document.getElementById('errorCount');
+        const balance = document.getElementById('balance');
+        const todayRequestCount = document.getElementById('todayRequestCount');
         const importLog = document.getElementById('importLog');
         
         // Переменные для управления импортом
         let currentSessionId = null;
         let importInterval = null;
+        let isPaused = false;
+        let pauseBtn = document.getElementById('pauseBtn');
 
         // Функция для обновления прогресса
         function updateProgress(progressData) {
@@ -309,6 +352,8 @@ require_once 'Settings.php';
             totalCompanies.textContent = progressData.total_companies || 0;
             updatedCompanies.textContent = progressData.companies_updated_count || 0;
             errorCount.textContent = progressData.companies_error_count || 0;
+            balance.textContent = progressData.balance || 0;
+            todayRequestCount.textContent = progressData.today_request_count || 0;
         }
         
         // Функция для добавления записи в лог
@@ -342,6 +387,9 @@ require_once 'Settings.php';
                         startBtn.disabled = false;
                         startBtn.textContent = 'Начать загрузку оборотов компаний';
                         
+                        // Скрываем кнопку паузы
+                        pauseBtn.style.display = 'none';
+                        
                         // Показываем итоговое сообщение
                         let finalMessage = '<div class="success">Загрузка оборотов компаний завершена!</div>';
                         if (data.data.companies_error_count > 0) {
@@ -373,8 +421,8 @@ require_once 'Settings.php';
                 if (data.success && data.data) {
                     updateProgress(data.data);
                     
-                    if (!data.data.completed) {
-                        // Если импорт не завершен, обрабатываем следующий батч
+                    if (!data.data.completed && !isPaused) {
+                        // Если импорт не завершен и не на паузе, обрабатываем следующий батч
                         processNextBatch();
                     }
                 }
@@ -384,11 +432,41 @@ require_once 'Settings.php';
             });
         }
         
+        // Функция для переключения паузы
+        function togglePause() {
+            isPaused = !isPaused;
+            
+            if (isPaused) {
+                pauseBtn.textContent = 'Продолжить';
+                pauseBtn.style.backgroundColor = '#28a745';
+                addLogEntry('Загрузка приостановлена');
+                
+                // Останавливаем интервал проверки прогресса
+                if (importInterval) {
+                    clearInterval(importInterval);
+                    importInterval = null;
+                }
+            } else {
+                pauseBtn.textContent = 'Пауза';
+                pauseBtn.style.backgroundColor = '#ffc107';
+                addLogEntry('Загрузка возобновлена');
+                
+                // Возобновляем интервал проверки прогресса
+                importInterval = setInterval(checkProgress, 2000);
+                
+                // Сразу проверяем прогресс
+                checkProgress();
+            }
+        }
+        
         // Функция для начала импорта
         function startImport(sessionId) {
             currentSessionId = sessionId;
             progressContainer.style.display = 'block';
             messageDiv.innerHTML = '';
+            
+            // Показываем кнопку паузы
+            pauseBtn.style.display = 'block';
             
             // Очищаем лог
             importLog.innerHTML = '';
@@ -407,8 +485,16 @@ require_once 'Settings.php';
             startBtn.textContent = 'Подготовка...';
             messageDiv.innerHTML = '';
             
+            // Скрываем кнопку паузы и сбрасываем состояние
+            pauseBtn.style.display = 'none';
+            isPaused = false;
+            
             const formData = new FormData();
             formData.append('user_id', userId);
+            
+            // Получаем значение чекбокса
+            const updateExistingCompanies = document.getElementById('updateExistingCompanies').checked;
+            formData.append('update_existing_companies', updateExistingCompanies ? '1' : '0');
             
             fetch('src/start_upload.php', {
                 method: 'POST',

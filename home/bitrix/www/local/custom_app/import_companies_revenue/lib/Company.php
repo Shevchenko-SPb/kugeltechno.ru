@@ -15,11 +15,14 @@ class Company
     }
     public function uploadRevenue($companyIds)
     {
+
         $countErrors = 0;
         $countUpdatedInn = 0;
         $countUpdatedRevenue = 0;
         $countRevenueNotFound = 0;
         $countInnNotFound = 0;
+        $balance = 0;
+        $requests = 0;
         $errorsLog = [];
 
         foreach ($companyIds as $companyId)
@@ -62,6 +65,8 @@ class Company
                 continue;
             }
             $arData = $res_checko['data'];
+            $balance = $res_checko['meta']['balance'];
+            $requests = $res_checko['meta']['today_request_count'];
             $arAmountForLast3Year = [' ', ' ', ' '];
             $counter = 0;
             foreach ($arData as $YEAR => $arItem) {
@@ -84,7 +89,8 @@ class Company
             if($lastYearAmount) {
                 $company->set(Settings::UF_COMPANY_LAST_YEAR_REVENUE, $lastYearAmount);
             }
-            $result = $company->save();
+            $updateOperation = $this->companyFactory->getUpdateOperation($company);
+            $result = $updateOperation->launch();
             if ($result->isSuccess()) {
                 $countUpdatedRevenue++;
             } else {
@@ -100,6 +106,8 @@ class Company
             'companies_revenue_not_found' => $countRevenueNotFound, // Количество компаний у которых не найдено данных об обороте
             'errors' => $countErrors, // Количество ошибок
             'errors_log' => $errorsLog, // Описание ошибок
+            'balance' => $balance, // Баланс на счете checko.ru
+            'today_request_count' => $requests, // Количество запросов за сегодня на сервис checko.ru
         ];
     }
 }

@@ -36,8 +36,11 @@ function sendResponse($success, $message, $data = null) {
 }
 
 try {
+    // Получаем параметр обновления существующих компаний
+    $updateExistingCompanies = isset($_POST['update_existing_companies']) ? $_POST['update_existing_companies'] === '1' : false;
+    
     // Получаем все ID компаний
-    $arCompaniesIds = BitrixController::getAllCompaniesIds();
+    $arCompaniesIds = BitrixController::getAllCompaniesIds(!$updateExistingCompanies);
     
     // Проверяем на ошибки
     if (isset($arCompaniesIds['alert_error'])) {
@@ -87,7 +90,9 @@ try {
         'total_batches' => $totalBatches,
         'start_time' => date('Y-m-d H:i:s'),
         'completed' => false,
-        'progress_percent' => 0
+        'progress_percent' => 0,
+        'balance' => 0,
+        'today_request_count' => 0
     ];
     
     // Сохраняем данные о прогрессе

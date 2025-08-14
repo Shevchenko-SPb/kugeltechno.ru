@@ -96,6 +96,14 @@ try {
     $progressData['companies_updated_count'] += isset($result['companies_updated_revenue']) ? $result['companies_updated_revenue'] : 0;
     $progressData['companies_error_count'] += isset($result['errors']) ? $result['errors'] : 0;
     
+    // Обновляем данные о балансе и запросах (берем последние значения из результата)
+    if (isset($result['balance'])) {
+        $progressData['balance'] = $result['balance'];
+    }
+    if (isset($result['today_request_count'])) {
+        $progressData['today_request_count'] = $result['today_request_count'];
+    }
+    
     // Переходим к следующему батчу
     $progressData['current_batch']++;
     

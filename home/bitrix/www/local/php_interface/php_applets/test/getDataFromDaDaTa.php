@@ -78,7 +78,7 @@ class DaDaTaApi
 }
 
 $DaDaTAApi = new DaDaTAapi();
-$result = $DaDaTAApi->getData("3528215377");
+$result = $DaDaTAApi->getData("5254003100");
 //$arCompanies = $result['suggestions'];
 //$rs = [];
 //foreach ($arCompanies as $key => $value) {
