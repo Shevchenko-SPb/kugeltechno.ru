@@ -11,7 +11,7 @@ class BitrixController
         return $Company->uploadRevenue($arIds);
     }
 
-    public static function getAllCompaniesIds($updateOnlyNewCompanies = true)
+    public static function getAllCompaniesIds($updateOnlyNewCompanies = true, $filters = [])
     {
         $factory = Container::getInstance()->getFactory(CCrmOwnerType::Company);
 
@@ -31,10 +31,31 @@ class BitrixController
             'select' => ['ID'],
         ];
 
+        $filterConditions = [];
+
         if($updateOnlyNewCompanies) {
-            $params['filter'] = [
-                Settings::UF_COMPANY_3_YEARS_REVENUE => false
-            ];
+            $filterConditions[Settings::UF_COMPANY_3_YEARS_REVENUE] = false;
+        }
+
+        // Добавляем пользовательские фильтры
+        if (!empty($filters)) {
+            foreach ($filters as $fieldCode => $value) {
+                if (empty($value)) continue;
+                
+                // Обработка множественных значений
+                if (is_array($value)) {
+                    if (!empty($value)) {
+                        $filterConditions[$fieldCode] = $value;
+                    }
+                } else {
+                    // Обработка строковых значений
+                    $filterConditions[$fieldCode] = '%' . $value . '%';
+                }
+            }
+        }
+
+        if (!empty($filterConditions)) {
+            $params['filter'] = $filterConditions;
         }
 
         $companies = $factory->getItems($params);

@@ -214,6 +214,273 @@ require_once 'Settings.php';
             border: 1px solid #dee2e6;
         }
         
+        /* Стили для фильтров */
+        .filter-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .filter-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .filter-item select,
+        .filter-item input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .filter-item select[multiple] {
+            min-height: 80px;
+        }
+        
+        .filter-buttons {
+            margin-top: 15px;
+        }
+        
+        .filter-buttons button {
+            margin-right: 10px;
+            width: auto;
+            padding: 8px 16px;
+        }
+        
+        /* Стили для кнопки переключения фильтров */
+        #toggleFiltersBtn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 200px;
+        }
+        
+        #toggleFiltersIcon {
+            margin-left: 10px;
+            transition: transform 0.3s ease;
+        }
+        
+        .filters-hidden #toggleFiltersIcon {
+            transform: rotate(-90deg);
+        }
+        
+        /* Анимация для блока фильтров */
+        .filters-container {
+            transition: all 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        
+        .filters-container.show {
+            max-height: 2000px;
+            opacity: 1;
+        }
+        
+        /* Стили для множественного выбора с поиском */
+        .multi-select-container {
+            position: relative;
+        }
+        
+        .multi-select-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .multi-select-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+        
+        .multi-select-header:hover {
+            border-color: #007bff;
+        }
+        
+        .dropdown-text {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .dropdown-arrow {
+            color: #6c757d;
+            transition: transform 0.2s ease;
+        }
+        
+        .multi-select-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow: hidden;
+        }
+        
+        .multi-select-search {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-bottom: 1px solid #ced4da;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .multi-select-options {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .multi-select-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+        
+        .multi-select-option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .multi-select-option:last-child {
+            border-bottom: none;
+        }
+        
+        .multi-select-option input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+        
+        .multi-select-option label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .multi-select-option.hidden {
+            display: none;
+        }
+        
+        .selected-values {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .selected-tag {
+            background-color: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .selected-tag .remove-tag {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .selected-tag .remove-tag:hover {
+            color: #ffc107;
+        }
+        
+        /* Стили для одиночного выбора с поиском */
+        .single-select-container {
+            position: relative;
+        }
+        
+        .single-select-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .single-select-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+        
+        .single-select-header:hover {
+            border-color: #007bff;
+        }
+        
+        .single-select-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow: hidden;
+        }
+        
+        .single-select-search {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-bottom: 1px solid #ced4da;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .single-select-options {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .single-select-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+        
+        .single-select-option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .single-select-option:last-child {
+            border-bottom: none;
+        }
+        
+        .single-select-option.hidden {
+            display: none;
+        }
+        
         /* Адаптивность */
         @media (max-width: 768px) {
             body {
@@ -240,6 +507,12 @@ require_once 'Settings.php';
             .stat-value {
                 font-size: 18px;
             }
+            
+            .filter-buttons button {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 8px;
+            }
         }
     </style>
 </head>
@@ -260,16 +533,34 @@ require_once 'Settings.php';
             <p><strong>Внимание:</strong> Процесс может занять некоторое время в зависимости от количества компаний в системе.</p>
         </div>
         
-        <!-- Чекбокс для обновления данных -->
-        <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-            <label style="display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #495057;">
-                <input type="checkbox" id="updateExistingCompanies" style="margin-right: 10px; transform: scale(1.2);">
-                Обновить данные ранее загруженных компаний
-            </label>
-            <div style="margin-top: 8px; font-size: 13px; color: #6c757d;">
-                Если выбрано - обновляются данные всех компаний. (Увеличение количество запросов может привести к увеличению стоимости загрузки сервиса checko.ru)
-                Если не выбрано - обрабатываются только компании с незаполненными полями об оборотах за 3 года.
-
+        <!-- Кнопка для показа/скрытия фильтров -->
+        <div style="margin-bottom: 15px;">
+            <button type="button" id="toggleFiltersBtn" onclick="toggleFilters()" style="background-color: #17a2b8; width: auto; padding: 10px 20px; margin-bottom: 0;">
+                <span id="toggleFiltersText">Показать фильтры</span>
+                <span id="toggleFiltersIcon">▼</span>
+            </button>
+        </div>
+        
+        <!-- Фильтры -->
+        <div id="filtersContainer" class="filters-container" style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; display: none;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #495057; font-size: 1.1em;">Фильтры для выбора компаний</h3>
+            <div id="filtersContent"></div>
+            
+            <!-- Чекбокс для обновления данных -->
+            <div style="margin-top: 20px; padding: 15px; background-color: white; border-radius: 6px; border: 1px solid #dee2e6;">
+                <label style="display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #495057;">
+                    <input type="checkbox" id="updateExistingCompanies" style="margin-right: 10px; transform: scale(1.2);">
+                    Обновить данные ранее загруженных компаний
+                </label>
+                <div style="margin-top: 8px; font-size: 13px; color: #6c757d;">
+                    Если выбрано - обновляются данные всех компаний. (Увеличение количество запросов может привести к увеличению стоимости загрузки сервиса checko.ru)
+                    Если не выбрано - обрабатываются только компании с незаполненными полями об оборотах за 3 года.
+                </div>
+            </div>
+            
+            <div class="filter-buttons">
+                <button type="button" onclick="clearFilters()" style="background-color: #6c757d;">Очистить фильтры</button>
+                <button type="button" onclick="applyFilters()" style="background-color: #28a745;">Применить фильтры</button>
             </div>
         </div>
         
@@ -325,6 +616,10 @@ require_once 'Settings.php';
         const startBtn = document.getElementById('startBtn');
         const messageDiv = document.getElementById('message');
         const progressContainer = document.getElementById('progressContainer');
+        
+        // Переменные для фильтров
+        let filtersData = {};
+        let currentFilters = {};
         
         // Элементы прогресса
         const progressFill = document.getElementById('progressFill');
@@ -479,6 +774,221 @@ require_once 'Settings.php';
             checkProgress();
         }
 
+        // Функция для загрузки фильтров при открытии страницы
+        function loadFilters() {
+            fetch('src/get_filters.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    filtersData = data.data;
+                    renderFilters();
+                    // Не показываем фильтры автоматически, пользователь сам решит когда их показать
+                } else {
+                    console.error('Ошибка загрузки фильтров:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка сети при загрузке фильтров:', error);
+            });
+        }
+        
+        // Функция для отрисовки фильтров
+        function renderFilters() {
+            const filtersContent = document.getElementById('filtersContent');
+            let html = '';
+            
+            for (const [fieldCode, filterInfo] of Object.entries(filtersData)) {
+                const fieldName = filterInfo.title || fieldCode;
+                
+                html += '<div class="filter-item">';
+                html += `<label>${fieldName}</label>`;
+                
+                if (filterInfo.vals) {
+                    const valuesCount = filterInfo.vals.length;
+                    
+                    // Выпадающий список с множественным выбором
+                    if (filterInfo.multiple) {
+                        html += `<div class="multi-select-container">`;
+                        html += `<div class="multi-select-dropdown" id="dropdown_${fieldCode}">`;
+                        html += `<div class="multi-select-header" onclick="toggleDropdown('${fieldCode}')">`;
+                        html += `<span class="dropdown-text">Выберите значения...</span>`;
+                        html += `<span class="dropdown-arrow">▼</span>`;
+                        html += `</div>`;
+                        html += `<div class="multi-select-content" id="content_${fieldCode}" style="display: none;">`;
+                        html += `<input type="text" id="search_${fieldCode}" class="multi-select-search" placeholder="Поиск по значениям..." oninput="filterOptions('${fieldCode}')">`;
+                        html += `<div class="multi-select-options" id="options_${fieldCode}">`;
+                        filterInfo.vals.forEach(val => {
+                            html += `<div class="multi-select-option" data-value="${val.id}" onclick="toggleOption('${fieldCode}', '${val.id}', '${val.title}')">`;
+                            html += `<input type="checkbox" id="option_${fieldCode}_${val.id}">`;
+                            html += `<label for="option_${fieldCode}_${val.id}">${val.title}</label>`;
+                            html += `</div>`;
+                        });
+                        html += `</div>`;
+                        html += `</div>`;
+                        html += `</div>`;
+                        html += `<div class="selected-values" id="selected_${fieldCode}"></div>`;
+                        html += `</div>`;
+                    } else {
+                        // Обычный выпадающий список
+                        if (valuesCount > 10) {
+                            // Для списков с более чем 10 значениями добавляем поиск
+                            html += `<div class="single-select-container">`;
+                            html += `<div class="single-select-dropdown" id="dropdown_${fieldCode}">`;
+                            html += `<div class="single-select-header" onclick="toggleSingleDropdown('${fieldCode}')">`;
+                            html += `<span class="dropdown-text">Выберите значение...</span>`;
+                            html += `<span class="dropdown-arrow">▼</span>`;
+                            html += `</div>`;
+                            html += `<div class="single-select-content" id="content_${fieldCode}" style="display: none;">`;
+                            html += `<input type="text" id="search_${fieldCode}" class="single-select-search" placeholder="Поиск по значениям..." oninput="filterSingleOptions('${fieldCode}')">`;
+                            html += `<div class="single-select-options" id="options_${fieldCode}">`;
+                            filterInfo.vals.forEach(val => {
+                                html += `<div class="single-select-option" data-value="${val.id}" onclick="selectSingleOption('${fieldCode}', '${val.id}', '${val.title}')">`;
+                                html += `${val.title}`;
+                                html += `</div>`;
+                            });
+                            html += `</div>`;
+                            html += `</div>`;
+                            html += `</div>`;
+                            html += `</div>`;
+                        } else {
+                            // Для небольших списков обычный select
+                            html += `<select id="filter_${fieldCode}">`;
+                            html += '<option value="">Выберите значение...</option>';
+                            filterInfo.vals.forEach(val => {
+                                html += `<option value="${val.id}">${val.title}</option>`;
+                            });
+                            html += '</select>';
+                        }
+                    }
+                } else if (filterInfo.type === 'string') {
+                    // Текстовое поле
+                    html += `<input type="text" id="filter_${fieldCode}" placeholder="Введите значение...">`;
+                }
+                
+                html += '</div>';
+            }
+            
+            filtersContent.innerHTML = html;
+        }
+        
+
+        
+        // Функция для применения фильтров
+        function applyFilters() {
+            currentFilters = {};
+            
+            for (const [fieldCode, filterInfo] of Object.entries(filtersData)) {
+                if (filterInfo.vals) {
+                    if (filterInfo.multiple) {
+                        // Множественный выбор - собираем из чекбоксов
+                        const selectedCheckboxes = document.querySelectorAll(`#options_${fieldCode} input[type="checkbox"]:checked`);
+                        const selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.id.replace(`option_${fieldCode}_`, ''));
+                        if (selectedValues.length > 0) {
+                            currentFilters[fieldCode] = selectedValues;
+                        }
+                    } else {
+                        // Одиночный выбор
+                        const valuesCount = filterInfo.vals.length;
+                        if (valuesCount > 10) {
+                            // Для списков с поиском берем значение из currentFilters
+                            if (currentFilters[fieldCode]) {
+                                // Значение уже сохранено в selectSingleOption
+                            }
+                        } else {
+                            // Для обычных select
+                            const element = document.getElementById(`filter_${fieldCode}`);
+                            if (element) {
+                                const value = element.value;
+                                if (value !== '') {
+                                    currentFilters[fieldCode] = value;
+                                }
+                            }
+                        }
+                    }
+                } else if (filterInfo.type === 'string') {
+                    // Текстовое поле
+                    const element = document.getElementById(`filter_${fieldCode}`);
+                    if (element) {
+                        const value = element.value.trim();
+                        if (value !== '') {
+                            currentFilters[fieldCode] = value;
+                        }
+                    }
+                }
+            }
+            
+            // Показываем информацию о примененных фильтрах
+            const appliedFiltersCount = Object.keys(currentFilters).length;
+            if (appliedFiltersCount > 0) {
+                messageDiv.innerHTML = `<div class="success">Применено фильтров: ${appliedFiltersCount}</div>`;
+            } else {
+                messageDiv.innerHTML = `<div class="success">Фильтры очищены</div>`;
+            }
+        }
+        
+        // Функция для очистки фильтров
+        function clearFilters() {
+            currentFilters = {};
+            
+            for (const [fieldCode, filterInfo] of Object.entries(filtersData)) {
+                if (filterInfo.vals) {
+                    if (filterInfo.multiple) {
+                        // Снимаем выделение со всех чекбоксов
+                        const checkboxes = document.querySelectorAll(`#options_${fieldCode} input[type="checkbox"]`);
+                        checkboxes.forEach(checkbox => checkbox.checked = false);
+                        
+                        // Очищаем выбранные значения
+                        const selectedContainer = document.getElementById(`selected_${fieldCode}`);
+                        if (selectedContainer) {
+                            selectedContainer.innerHTML = '';
+                        }
+                        
+                        // Очищаем поиск
+                        const searchInput = document.getElementById(`search_${fieldCode}`);
+                        if (searchInput) {
+                            searchInput.value = '';
+                            filterOptions(fieldCode); // Показываем все опции
+                        }
+                    } else {
+                        // Сбрасываем на пустое значение
+                        const element = document.getElementById(`filter_${fieldCode}`);
+                        if (element) {
+                            element.value = '';
+                        }
+                        
+                        // Очищаем поиск для одиночных списков с поиском
+                        const searchInput = document.getElementById(`search_${fieldCode}`);
+                        if (searchInput) {
+                            searchInput.value = '';
+                            filterSingleOptions(fieldCode); // Показываем все опции
+                        }
+                        
+                        // Сбрасываем заголовок выпадающего списка
+                        const header = document.querySelector(`#dropdown_${fieldCode} .dropdown-text`);
+                        if (header) {
+                            header.textContent = 'Выберите значение...';
+                        }
+                        
+                        // Закрываем выпадающий список
+                        const content = document.getElementById(`content_${fieldCode}`);
+                        const arrow = document.querySelector(`#dropdown_${fieldCode} .dropdown-arrow`);
+                        if (content && arrow) {
+                            content.style.display = 'none';
+                            arrow.style.transform = 'rotate(0deg)';
+                        }
+                    }
+                } else if (filterInfo.type === 'string') {
+                    // Очищаем текстовое поле
+                    const element = document.getElementById(`filter_${fieldCode}`);
+                    if (element) {
+                        element.value = '';
+                    }
+                }
+            }
+            
+            messageDiv.innerHTML = `<div class="success">Фильтры очищены</div>`;
+        }
+        
         // Функция для начала загрузки оборотов
         function startRevenueUpload() {
             startBtn.disabled = true;
@@ -495,6 +1005,9 @@ require_once 'Settings.php';
             // Получаем значение чекбокса
             const updateExistingCompanies = document.getElementById('updateExistingCompanies').checked;
             formData.append('update_existing_companies', updateExistingCompanies ? '1' : '0');
+            
+            // Добавляем фильтры
+            formData.append('filters', JSON.stringify(currentFilters));
             
             fetch('src/start_upload.php', {
                 method: 'POST',
@@ -532,6 +1045,177 @@ require_once 'Settings.php';
                     navigator.sendBeacon('src/cancel_upload.php', formData);
                 }
             }
+        });
+        
+        // Функция для фильтрации опций по поиску (множественный выбор)
+        function filterOptions(fieldCode) {
+            const searchInput = document.getElementById(`search_${fieldCode}`);
+            const searchTerm = searchInput.value.toLowerCase();
+            const options = document.querySelectorAll(`#options_${fieldCode} .multi-select-option`);
+            
+            options.forEach(option => {
+                const label = option.querySelector('label').textContent.toLowerCase();
+                if (label.includes(searchTerm)) {
+                    option.classList.remove('hidden');
+                } else {
+                    option.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Функция для фильтрации опций по поиску (одиночный выбор)
+        function filterSingleOptions(fieldCode) {
+            const searchInput = document.getElementById(`search_${fieldCode}`);
+            const searchTerm = searchInput.value.toLowerCase();
+            const options = document.querySelectorAll(`#options_${fieldCode} .single-select-option`);
+            
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    option.classList.remove('hidden');
+                } else {
+                    option.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Функция для переключения выпадающего списка (множественный выбор)
+        function toggleDropdown(fieldCode) {
+            const content = document.getElementById(`content_${fieldCode}`);
+            const arrow = document.querySelector(`#dropdown_${fieldCode} .dropdown-arrow`);
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+                // Фокусируемся на поле поиска
+                setTimeout(() => {
+                    document.getElementById(`search_${fieldCode}`).focus();
+                }, 100);
+            } else {
+                content.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        // Функция для переключения выпадающего списка (одиночный выбор)
+        function toggleSingleDropdown(fieldCode) {
+            const content = document.getElementById(`content_${fieldCode}`);
+            const arrow = document.querySelector(`#dropdown_${fieldCode} .dropdown-arrow`);
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+                // Фокусируемся на поле поиска
+                setTimeout(() => {
+                    document.getElementById(`search_${fieldCode}`).focus();
+                }, 100);
+            } else {
+                content.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        // Функция для выбора одиночной опции
+        function selectSingleOption(fieldCode, value, title) {
+            const header = document.querySelector(`#dropdown_${fieldCode} .dropdown-text`);
+            const content = document.getElementById(`content_${fieldCode}`);
+            const arrow = document.querySelector(`#dropdown_${fieldCode} .dropdown-arrow`);
+            
+            header.textContent = title;
+            content.style.display = 'none';
+            arrow.style.transform = 'rotate(0deg)';
+            
+            // Сохраняем выбранное значение
+            if (!currentFilters[fieldCode]) {
+                currentFilters[fieldCode] = {};
+            }
+            currentFilters[fieldCode] = value;
+        }
+        
+        // Функция для переключения выбора опции
+        function toggleOption(fieldCode, value, title) {
+            const checkbox = document.getElementById(`option_${fieldCode}_${value}`);
+            const selectedValuesContainer = document.getElementById(`selected_${fieldCode}`);
+            
+            if (checkbox.checked) {
+                // Убираем из выбранных
+                checkbox.checked = false;
+                const tagToRemove = selectedValuesContainer.querySelector(`[data-value="${value}"]`);
+                if (tagToRemove) {
+                    tagToRemove.remove();
+                }
+            } else {
+                // Добавляем к выбранным
+                checkbox.checked = true;
+                const tag = document.createElement('div');
+                tag.className = 'selected-tag';
+                tag.setAttribute('data-value', value);
+                tag.innerHTML = `
+                    ${title}
+                    <span class="remove-tag" onclick="removeSelectedOption('${fieldCode}', '${value}', '${title}')">&times;</span>
+                `;
+                selectedValuesContainer.appendChild(tag);
+            }
+        }
+        
+        // Функция для удаления выбранной опции
+        function removeSelectedOption(fieldCode, value, title) {
+            const checkbox = document.getElementById(`option_${fieldCode}_${value}`);
+            const selectedValuesContainer = document.getElementById(`selected_${fieldCode}`);
+            
+            checkbox.checked = false;
+            const tagToRemove = selectedValuesContainer.querySelector(`[data-value="${value}"]`);
+            if (tagToRemove) {
+                tagToRemove.remove();
+            }
+        }
+        
+        // Функция для переключения показа/скрытия фильтров
+        function toggleFilters() {
+            const filtersContainer = document.getElementById('filtersContainer');
+            const toggleBtn = document.getElementById('toggleFiltersBtn');
+            const toggleText = document.getElementById('toggleFiltersText');
+            const toggleIcon = document.getElementById('toggleFiltersIcon');
+            
+            if (filtersContainer.style.display === 'none' || filtersContainer.style.display === '') {
+                // Показываем фильтры
+                filtersContainer.style.display = 'block';
+                setTimeout(() => {
+                    filtersContainer.classList.add('show');
+                }, 10);
+                toggleText.textContent = 'Скрыть фильтры';
+                toggleIcon.textContent = '▲';
+                toggleBtn.classList.remove('filters-hidden');
+            } else {
+                // Скрываем фильтры
+                filtersContainer.classList.remove('show');
+                setTimeout(() => {
+                    filtersContainer.style.display = 'none';
+                }, 300);
+                toggleText.textContent = 'Показать фильтры';
+                toggleIcon.textContent = '▼';
+                toggleBtn.classList.add('filters-hidden');
+            }
+        }
+        
+        // Загружаем фильтры при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFilters();
+            
+            // Закрываем выпадающие списки при клике вне их
+            document.addEventListener('click', function(event) {
+                const dropdowns = document.querySelectorAll('.multi-select-dropdown, .single-select-dropdown');
+                dropdowns.forEach(dropdown => {
+                    if (!dropdown.contains(event.target)) {
+                        const content = dropdown.querySelector('.multi-select-content, .single-select-content');
+                        const arrow = dropdown.querySelector('.dropdown-arrow');
+                        if (content && arrow) {
+                            content.style.display = 'none';
+                            arrow.style.transform = 'rotate(0deg)';
+                        }
+                    }
+                });
+            });
         });
     </script>
 </body>

@@ -2,8 +2,8 @@
 namespace ImportCompaniesRevenue\lib;
 
 /* УДАЛИТЬ */
-require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
-require_once './../Settings.php';
+//require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+//require_once './../Settings.php';
 use Bitrix\Main\Loader;
 Loader::includeModule('crm');
 /*         */
@@ -36,6 +36,7 @@ class Filter
 
             $type = $fieldData['TYPE'];
             $filterData[$code]['type'] = $type;
+            $filterData[$code]['title'] = $fieldData['TITLE'];
             $filterData[$code]['multiple'] = false;
             if($arAttributes = $fieldData['ATTRIBUTES']) {
                 if(is_array($arAttributes)) {
@@ -95,8 +96,10 @@ class Filter
                 'type' => 'user',
                 'multiple' => false,
                 'vals' => $this->getUsers(),
+                'title' => 'Ответственный'
             ];
         }
+
         return null;
     }
     function getUsers()

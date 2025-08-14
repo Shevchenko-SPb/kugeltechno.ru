@@ -39,8 +39,17 @@ try {
     // Получаем параметр обновления существующих компаний
     $updateExistingCompanies = isset($_POST['update_existing_companies']) ? $_POST['update_existing_companies'] === '1' : false;
     
-    // Получаем все ID компаний
-    $arCompaniesIds = BitrixController::getAllCompaniesIds(!$updateExistingCompanies);
+    // Получаем фильтры из POST запроса
+    $filters = [];
+    if (isset($_POST['filters']) && is_string($_POST['filters'])) {
+        $filters = json_decode($_POST['filters'], true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $filters = [];
+        }
+    }
+    
+    // Получаем все ID компаний с учетом фильтров
+    $arCompaniesIds = BitrixController::getAllCompaniesIds(!$updateExistingCompanies, $filters);
     
     // Проверяем на ошибки
     if (isset($arCompaniesIds['alert_error'])) {
