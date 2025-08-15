@@ -15,7 +15,7 @@ require_once 'Settings.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Загрузка оборотов компаний</title>
+    <title>Загрузка филиалов компаний из DaDaTa</title>
     <style>
         * {
             box-sizing: border-box;
@@ -531,17 +531,17 @@ require_once 'Settings.php';
 </head>
 <body>
     <div class="container">
-        <h1>Загрузка оборотов компаний</h1>
+        <h1>Загрузка филиалов компаний из DaDaTa</h1>
         
         <!-- Информационный блок -->
         <div class="info-block">
             <h3>ℹ️ Информация о процессе</h3>
             <p><strong>Что делает это приложение:</strong></p>
             <ul style="margin: 10px 0; padding-left: 20px; color: #1976D2;">
-                <li>Получает список всех компаний из CRM</li>
-                <li>Загружает данные об оборотах компаний порциями по 10 компаний</li>
-                <li>Обновляет пользовательские поля компаний с данными об оборотах</li>
-                <li>Показывает прогресс выполнения в реальном времени</li>
+                <li>Получает список всех компаний из CRM, используя фильтры</li>
+                <li>Загружает данные о компаниях порциями по 10 компаний</li>
+                <li>Создаёт филиалы компаний, если таких нет в Битриксе</li>
+                <li>Заполняет поля с реквизитами филиалов</li>
             </ul>
             <p><strong>Внимание:</strong> Процесс может занять некоторое время в зависимости от количества компаний в системе.</p>
         </div>
@@ -555,10 +555,9 @@ require_once 'Settings.php';
         </div>
         
         <!-- Фильтры -->
-        <div id="filtersContainer" class="filters-container show" style="margin-bottom: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e9ecef; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: block;">
+        <div id="filtersContainer" class="filters-container show" style="margin-bottom: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e9ecef; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: block"">
             <h3 style="margin-top: 0; margin-bottom: 15px; color: #495057; font-size: 1.1em;">Фильтры для выбора компаний</h3>
             <div id="filtersContent"></div>
-            
             <!-- Чекбокс для обновления данных -->
             <div style="margin-top: 20px; padding: 15px; background-color: white; border-radius: 6px; border: 1px solid #dee2e6;">
                 <label style="display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #495057;">
@@ -566,8 +565,8 @@ require_once 'Settings.php';
                     Обновить данные ранее загруженных компаний
                 </label>
                 <div style="margin-top: 8px; font-size: 13px; color: #6c757d;">
-                    Если выбрано - обновляются данные всех компаний. (Увеличение количество запросов может привести к увеличению стоимости загрузки сервиса checko.ru)
-                    Если не выбрано - обрабатываются только компании с незаполненными полями об оборотах за 3 года.
+                    Если выбрано - обновляются данные всех компаний. (Увеличение количество запросов может привести к увеличению стоимости загрузки)
+                    Если не выбрано - обрабатываются только компании с полем "Выполнена проверка DaDaTa" со значением НЕТ.
                 </div>
             </div>
             
@@ -577,7 +576,7 @@ require_once 'Settings.php';
             </div>
         </div>
         
-        <button id="startBtn" onclick="startRevenueUpload()">Начать загрузку оборотов компаний</button>
+        <button id="startBtn" onclick="startRevenueUpload()">Начать загрузку данных</button>
         <button id="pauseBtn" onclick="togglePause()" style="display: none; background-color: #ffc107; margin-top: 10px;">Пауза</button>
         
         <div id="message"></div>
@@ -1191,7 +1190,6 @@ require_once 'Settings.php';
             const toggleBtn = document.getElementById('toggleFiltersBtn');
             const toggleText = document.getElementById('toggleFiltersText');
             const toggleIcon = document.getElementById('toggleFiltersIcon');
-            
             if (filtersContainer.style.display === 'none' || filtersContainer.style.display === '') {
                 // Показываем фильтры
                 filtersContainer.style.display = 'block';

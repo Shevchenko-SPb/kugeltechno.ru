@@ -1,8 +1,8 @@
 <?php
 use Bitrix\Crm\Service\Container;
 
-use ImportCompaniesRevenue\Settings;
-use ImportCompaniesRevenue\lib\Company;
+use ImportCompaniesFromDaDaTa\Settings;
+use ImportCompaniesFromDaDaTa\lib\Company;
 class BitrixController
 {
     public static function actionUploadCompaniesRevenue ($arIds)
@@ -34,7 +34,7 @@ class BitrixController
         $filterConditions = [];
 
         if($updateOnlyNewCompanies) {
-            $filterConditions[Settings::UF_COMPANY_3_YEARS_REVENUE] = false;
+            $filterConditions[Settings::UF_COMPANY_IS_CHECK_DA_DA_TA] = false;
         }
 
         // Добавляем пользовательские фильтры
