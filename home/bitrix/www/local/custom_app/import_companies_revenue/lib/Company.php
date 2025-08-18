@@ -54,14 +54,23 @@ class Company
             }
             $Checko = new \Checko();
             $res_checko = $Checko->getDataFromChecko($inn);
+
             if ($res_checko['meta']['status'] == 'error') {
                 $countErrors++;
                 $errorsLog[] = "Ошибка при загрузке данных из Checko для компании с ID: {$companyId}. Сообщение: \"{$res_checko['meta']['message']}\"";
                 continue;
             }
             if (!$res_checko['data']) { // Если в ответе нет данных о компании
-                $countRevenueNotFound++;
-                $errorsLog[] = "Данных об оборотах не найдено для компании с ID: {$companyId}";
+                $company->set(Settings::UF_COMPANY_3_YEARS_REVENUE, '-');
+                $company->set(Settings::UF_COMPANY_LAST_YEAR_REVENUE, 0);
+                $updateOperation = $this->companyFactory->getUpdateOperation($company);
+                $result = $updateOperation->launch();
+                if ($result->isSuccess()) {
+                    $countUpdatedRevenue++;
+                } else {
+                    $countErrors++;
+                    $errorsLog[] = ["Ошибка обновление компании id $companyId" => $result->getErrorMessages()];
+                }
                 continue;
             }
             $arData = $res_checko['data'];

@@ -3,6 +3,7 @@ namespace ImportCompaniesFromDaDaTa\lib;
 
 use Bitrix\Crm\Service\Container;
 use ImportCompaniesFromDaDaTa\Settings;
+use Bitrix\Crm\ItemIdentifier;
 
 
 class Company
@@ -36,6 +37,12 @@ class Company
                 continue;
             }
             $mainCompanyFields = $mainCompany->getData();
+
+
+            $parent = new ItemIdentifier(\CCrmOwnerType::Company, $companyId);
+            $child = new ItemIdentifier(\CCrmOwnerType::Company, 222674);
+            $result = Container::getInstance()->getRelationManager()->bindItems($parent, $child);
+            return $result->isSuccess();
             $inn = $mainCompanyFields[Settings::UF_COMPANY_INN];
             // Если ИНН не найден, то пытаемся найти его по названию компании
             if(!$inn) {
