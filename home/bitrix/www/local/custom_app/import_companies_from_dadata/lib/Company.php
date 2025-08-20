@@ -15,7 +15,7 @@ class Company
         $this->companyFactory = Container::getInstance()->getFactory(\CCrmOwnerType::Company);
         $this->companyUFs = $this->companyFactory->getUserFieldsInfo();
     }
-    public function uploadRevenue($companyIds)
+    public function uploadDaDaTa($companyIds)
     {
 
         $countErrors = 0;

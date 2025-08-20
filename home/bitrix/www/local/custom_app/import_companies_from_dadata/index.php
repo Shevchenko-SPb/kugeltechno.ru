@@ -576,7 +576,7 @@ require_once 'Settings.php';
             </div>
         </div>
         
-        <button id="startBtn" onclick="startRevenueUpload()">Начать загрузку данных</button>
+        <button id="startBtn" onclick="startRevenueUpload()">Начать загрузку данных из DaDaTa</button>
         <button id="pauseBtn" onclick="togglePause()" style="display: none; background-color: #ffc107; margin-top: 10px;">Пауза</button>
         
         <div id="message"></div>
@@ -584,35 +584,31 @@ require_once 'Settings.php';
         <!-- Контейнер для отображения прогресса -->
         <div id="progressContainer" class="progress-container">
             <div class="progress-info">
-                <h3>Загрузка оборотов компаний</h3>
+                <h3>Загрузка данных из DaDaTa</h3>
                 <div class="progress-bar">
                     <div id="progressFill" class="progress-fill">0%</div>
                 </div>
                 
                 <div class="progress-stats">
                     <div class="stat-item">
-                        <div class="stat-label">Обработано компаний</div>
-                        <div id="processedCompanies" class="stat-value">0</div>
+                        <div class="stat-label">Проверено компаний</div>
+                        <div id="companiesCheckCount" class="stat-value">0</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Всего компаний</div>
-                        <div id="totalCompanies" class="stat-value">0</div>
+                        <div class="stat-label">Добавлено компаний</div>
+                        <div id="companiesAddCount" class="stat-value">0</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Обновлено компаний</div>
-                        <div id="updatedCompanies" class="stat-value">0</div>
+                        <div id="companiesUpdateCount" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Добавлено холдингов</div>
+                        <div id="holdingsAddCount" class="stat-value">0</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Ошибок</div>
                         <div id="errorCount" class="stat-value">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Баланс checko.ru</div>
-                        <div id="balance" class="stat-value">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Запросов сегодня</div>
-                        <div id="todayRequestCount" class="stat-value">0</div>
                     </div>
                 </div>
                 
@@ -635,12 +631,12 @@ require_once 'Settings.php';
         
         // Элементы прогресса
         const progressFill = document.getElementById('progressFill');
-        const processedCompanies = document.getElementById('processedCompanies');
-        const totalCompanies = document.getElementById('totalCompanies');
-        const updatedCompanies = document.getElementById('updatedCompanies');
         const errorCount = document.getElementById('errorCount');
-        const balance = document.getElementById('balance');
-        const todayRequestCount = document.getElementById('todayRequestCount');
+        const companiesCheckCount = document.getElementById('companiesCheckCount');
+        const companiesAddCount = document.getElementById('companiesAddCount');
+        const companiesUpdateCount = document.getElementById('companiesUpdateCount');
+        const holdingsAddCount = document.getElementById('holdingsAddCount');
+        
         const importLog = document.getElementById('importLog');
         
         // Переменные для управления импортом
@@ -655,12 +651,12 @@ require_once 'Settings.php';
             progressFill.style.width = percent + '%';
             progressFill.textContent = percent + '%';
             
-            processedCompanies.textContent = progressData.processed_companies || 0;
-            totalCompanies.textContent = progressData.total_companies || 0;
-            updatedCompanies.textContent = progressData.companies_updated_count || 0;
             errorCount.textContent = progressData.companies_error_count || 0;
-            balance.textContent = progressData.balance || 0;
-            todayRequestCount.textContent = progressData.today_request_count || 0;
+            companiesCheckCount.textContent = progressData.companies_check_count || 0;
+            companiesAddCount.textContent = progressData.companies_add_count || 0;
+            companiesUpdateCount.textContent = progressData.companies_update_count || 0;
+            holdingsAddCount.textContent = progressData.holdings_add_count || 0;
+            
         }
         
         // Функция для добавления записи в лог
@@ -690,23 +686,17 @@ require_once 'Settings.php';
                     if (data.data.completed) {
                         // Импорт завершен
                         clearInterval(importInterval);
-                        addLogEntry('Загрузка оборотов компаний завершена успешно!');
+                        addLogEntry('Загрузка данных из DaDaTa завершена успешно!');
                         startBtn.disabled = false;
-                        startBtn.textContent = 'Начать загрузку оборотов компаний';
+                        startBtn.textContent = 'Начать загрузку данных из DaDaTa';
                         
                         // Скрываем кнопку паузы
                         pauseBtn.style.display = 'none';
                         
                         // Показываем итоговое сообщение
-                        let finalMessage = '<div class="success">Загрузка оборотов компаний завершена!</div>';
-                        if (data.data.companies_error_count > 0) {
-                            finalMessage += `<div style="margin-top: 10px; color: #856404; background-color: #fff3cd; padding: 10px; border-radius: 4px; border-left: 3px solid #ffc107;">
-                                Обработано компаний: ${data.data.processed_companies}, Обновлено: ${data.data.companies_updated_count}, Ошибок: ${data.data.companies_error_count}
-                            </div>`;
-                        }
-                        messageDiv.innerHTML = finalMessage;
+                        messageDiv.innerHTML = '<div class="success">Загрузка данных из DaDaTa завершена!</div>';
                     } else {
-                        addLogEntry(`Обработано компаний ${data.data.processed_companies} из ${data.data.total_companies}`);
+                        addLogEntry(`Проверено компаний: ${data.data.companies_check_count}, добавлено: ${data.data.companies_add_count}, обновлено: ${data.data.companies_update_count}, холдингов добавлено: ${data.data.holdings_add_count}`);
                     }
                 } else {
                     addLogEntry('Ошибка при обработке батча: ' + (data.message || 'Неизвестная ошибка'));
@@ -777,7 +767,7 @@ require_once 'Settings.php';
             
             // Очищаем лог
             importLog.innerHTML = '';
-            addLogEntry('Начинаем загрузку оборотов компаний...');
+            addLogEntry('Начинаем загрузку данных из DaDaTa...');
             
             // Запускаем проверку прогресса каждые 2 секунды
             importInterval = setInterval(checkProgress, 2000);
@@ -1002,7 +992,7 @@ require_once 'Settings.php';
             messageDiv.innerHTML = `<div class="success">Фильтры очищены</div>`;
         }
         
-        // Функция для начала загрузки оборотов
+        // Функция для начала загрузки данных из DaDaTa
         function startRevenueUpload() {
             startBtn.disabled = true;
             startBtn.textContent = 'Подготовка...';
@@ -1029,19 +1019,19 @@ require_once 'Settings.php';
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.data && data.data.ready_for_import) {
-                    startBtn.textContent = 'Загрузка...';
+                    startBtn.textContent = 'Загрузка данных из DaDaTa...';
                     startImport(data.data.session_id);
                 } else {
                     messageDiv.innerHTML = `<div class="error">${data.message}</div>`;
                     startBtn.disabled = false;
-                    startBtn.textContent = 'Начать загрузку оборотов компаний';
+                    startBtn.textContent = 'Начать загрузку данных из DaDaTa';
                 }
             })
             .catch(error => {
                 messageDiv.innerHTML = `<div class="error">Произошла ошибка при подготовке загрузки</div>`;
                 console.error('Error:', error);
                 startBtn.disabled = false;
-                startBtn.textContent = 'Начать загрузку оборотов компаний';
+                startBtn.textContent = 'Начать загрузку данных из DaDaTa';
             });
         }
         

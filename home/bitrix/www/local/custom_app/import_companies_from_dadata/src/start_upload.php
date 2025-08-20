@@ -61,7 +61,7 @@ try {
     }
     
     // Генерируем уникальный ID сессии
-    $sessionId = uniqid('revenue_', true);
+    $sessionId = uniqid('dadata_', true);
     
     // Проверяем существование директории temp
     $tempDir = dirname(__DIR__) . '/temp';
@@ -94,6 +94,11 @@ try {
         'processed_companies' => 0,
         'companies_updated_count' => 0,
         'companies_error_count' => 0,
+        // Новые счётчики на основе ответа Company::uploadRevenue
+        'companies_add_count' => 0,
+        'companies_update_count' => 0,
+        'companies_check_count' => 0,
+        'holdings_add_count' => 0,
         'batch_size' => $batchSize,
         'current_batch' => 0,
         'total_batches' => $totalBatches,
@@ -114,7 +119,7 @@ try {
     // Сохраняем ID сессии в сессии PHP
     $_SESSION['import_session_id'] = $sessionId;
     
-    sendResponse(true, 'Готово к загрузке оборотов компаний', [
+    sendResponse(true, 'Готово к загрузке данных из DaDaTa', [
         'ready_for_import' => true,
         'session_id' => $sessionId,
         'total_companies' => $totalCompanies,

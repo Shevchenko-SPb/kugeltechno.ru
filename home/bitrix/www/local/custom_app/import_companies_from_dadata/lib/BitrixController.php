@@ -8,7 +8,7 @@ class BitrixController
     public static function actionUploadCompaniesRevenue ($arIds)
     {
         $Company = new Company();
-        return $Company->uploadRevenue($arIds);
+        return $Company->uploadDaDaTa($arIds);
     }
 
     public static function getAllCompaniesIds($updateOnlyNewCompanies = true, $filters = [])

@@ -11,7 +11,7 @@ use ImportCompaniesFromDaDaTa\lib\Company;
 $ids = [222678];
 //$ids = [218672];
 $Company = new Company();
-$rs = $Company->uploadRevenue($ids);
+$rs = $Company->uploadDaDaTa($ids);
 echo '<pre>';
 print_r($rs);
 echo '</pre>';

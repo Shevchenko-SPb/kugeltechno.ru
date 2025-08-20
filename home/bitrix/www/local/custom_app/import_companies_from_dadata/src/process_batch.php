@@ -93,8 +93,29 @@ try {
     
     // Обновляем статистику
     $progressData['processed_companies'] += count($batchCompanyIds);
-    $progressData['companies_updated_count'] += isset($result['companies_updated_revenue']) ? $result['companies_updated_revenue'] : 0;
-    $progressData['companies_error_count'] += isset($result['errors']) ? $result['errors'] : 0;
+    // Адаптация к новому формату ответа Company::uploadRevenue
+    // Если присутствует старое поле, используем его, иначе суммируем новые поля
+    $updatedThisBatch = 0;
+    if (isset($result['companies_updated_revenue'])) {
+        $updatedThisBatch = (int)$result['companies_updated_revenue'];
+    } else {
+        $updatedThisBatch = (int)($result['companies_add'] ?? 0) + (int)($result['companies_update'] ?? 0);
+    }
+    $progressData['companies_updated_count'] += $updatedThisBatch;
+    $progressData['companies_error_count'] += isset($result['errors']) ? (int)$result['errors'] : 0;
+    // Новые детальные счётчики
+    if (isset($result['companies_add'])) {
+        $progressData['companies_add_count'] += (int)$result['companies_add'];
+    }
+    if (isset($result['companies_update'])) {
+        $progressData['companies_update_count'] += (int)$result['companies_update'];
+    }
+    if (isset($result['companies_check'])) {
+        $progressData['companies_check_count'] += (int)$result['companies_check'];
+    }
+    if (isset($result['holdings_add'])) {
+        $progressData['holdings_add_count'] += (int)$result['holdings_add'];
+    }
     
     // Обновляем данные о балансе и запросах (берем последние значения из результата)
     if (isset($result['balance'])) {
