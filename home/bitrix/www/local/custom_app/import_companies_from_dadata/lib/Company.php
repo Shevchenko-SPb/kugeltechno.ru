@@ -4,8 +4,6 @@ namespace ImportCompaniesFromDaDaTa\lib;
 use Bitrix\Crm\Service\Container;
 use ImportCompaniesFromDaDaTa\Settings;
 use Bitrix\Main\Loader;
-use Bitrix\Crm\ItemIdentifier;
-
 
 class Company
 {
@@ -21,12 +19,10 @@ class Company
     {
 
         $countErrors = 0;
-        $countUpdatedInn = 0;
-        $countUpdatedRevenue = 0;
-        $countRevenueNotFound = 0;
-        $countInnNotFound = 0;
-        $balance = 0;
-        $requests = 0;
+        $countCheckCompanies = 0;
+        $countUpdateCompanies = 0;
+        $countAddCompanies = 0;
+        $countAddHoldings = 0;
         $errorsLog = [];
 
         foreach ($companyIds as $companyId)
@@ -48,12 +44,10 @@ class Company
                 }
             }
             if(!$inn) {
-                $countInnNotFound++;
                 $errorsLog[] = "Не найден ИНН для компании с ID: {$companyId}";
                 continue;
             }
             if($inn == '1234567890') {
-                $countInnNotFound++;
                 $errorsLog[] = "ИНН 1234567890 для компании с ID: {$companyId} Загрузка прервана";
                 continue;
             }
@@ -65,12 +59,12 @@ class Company
                 $errorsLog[] = "Ошибка при загрузке данных из DaDaTa для компании с ID: {$companyId}. Сообщение: \"{$res_dadata['message']}\"";
                 continue;
             }
+            $countCheckCompanies++;
             if (!$res_dadata['suggestions']) {
                 // Если в ответе нет данных о компании
                 $mainCompany->set(Settings::UF_COMPANY_IS_CHECK_DA_DA_TA, true);
                 $updateOperation = $this->companyFactory->getUpdateOperation($mainCompany);
                 $updateOperation->launch();
-                $countRevenueNotFound++;
                 $errorsLog[] = "Данных не найдено для компании с ID: {$companyId}";
                 continue;
             }
@@ -140,6 +134,7 @@ class Company
                         $errorsLog[] = "Ошибка при создании элемента списка \"Холдинги\" для компании с ID: {$companyId}. Сообщение: \"{$result['error']}\"";
                         continue;
                     }
+                    $countAddHoldings ++;
                     $holdingElId = $result['id']; // Получаем id созданного элемента списка "Холдинги"
                 }
                 foreach ($branches as $branch) {
@@ -151,6 +146,7 @@ class Company
                     }
                     $branchCompanyId = $result['id'];
                     if($branchCompanyId) {
+                        $result['isCreated'] ? $countAddCompanies++ : $countUpdateCompanies++;
                         $branchCompaniesIds[] = $branchCompanyId;
                         $this->addRequisite($branchCompanyId, $branch);
                         $this->addBranchCompanyInHoldingList($holdingElId, $branchCompanyId);
@@ -234,6 +230,7 @@ class Company
                 }
                 $updateOperation = $this->companyFactory->getUpdateOperation($mainCompany);
                 $updateOperation->launch();
+                $countUpdateCompanies++;
 
                 if($holdingElId) {
                     $this->runListBP(Settings::LIST_HOLDINGS_ID, $holdingElId);
@@ -241,14 +238,12 @@ class Company
             }
         }
         return [
-            'companies_updated_inn' => $countUpdatedInn, // Обновлено ИНН у компаний
-            'companies_inn_not_found' => $countInnNotFound, // Не найдено ИНН у компании
-            'companies_updated_revenue' => $countUpdatedRevenue, // Количество компаний у которых обновлены данные об обороте
-            'companies_revenue_not_found' => $countRevenueNotFound, // Количество компаний у которых не найдено данных об обороте
+            'companies_check' => $countCheckCompanies, // Проверено компаний
+            'companies_add' => $countAddCompanies, // Добавлено компаний
+            'companies_update' => $countUpdateCompanies, // Обновлено компаний
+            'holdings_add' => $countAddHoldings, // Добавлено холдингов
             'errors' => $countErrors, // Количество ошибок
             'errors_log' => $errorsLog, // Описание ошибок
-            'balance' => $balance, // Баланс на счете checko.ru
-            'today_request_count' => $requests, // Количество запросов за сегодня на сервис checko.ru
         ];
     }
 
@@ -322,7 +317,10 @@ class Company
         if($company) {
             $companyId = $company->getId();
             if($companyId) {
-                return ['id' => $companyId];
+                return [
+                    'id' => $companyId,
+                    'isCreated' => false
+                ];
             }
         }
         // Компания не найдена - создаём новую
@@ -407,7 +405,8 @@ class Company
         if ($result->isSuccess()) {
             $companyId = $company->getId(); // Получаем ID созданной компании
             return [
-                'id' => $companyId
+                'id' => $companyId,
+                'isCreated' => true
             ];
         } else {
             return [
