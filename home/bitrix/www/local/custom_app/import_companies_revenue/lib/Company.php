@@ -93,6 +93,8 @@ class Company
 
             if($arAmountFormated) {
                 $company->set(Settings::UF_COMPANY_3_YEARS_REVENUE, implode(" || ", $arAmountFormated));
+            } else {
+                $company->set(Settings::UF_COMPANY_3_YEARS_REVENUE, '-');
             }
             $company->set(Settings::UF_COMPANY_INN, $inn);
             if($lastYearAmount) {
