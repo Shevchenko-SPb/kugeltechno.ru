@@ -354,7 +354,7 @@ class Company
             'UPDATED_BY' => 1,
             Settings::UF_COMPANY_KPP => $kpp,
             Settings::UF_COMPANY_OGRN => $ogrn,
-            Settings::UF_COMPANY_IS_CHECK_DA_DA_TA, true
+            Settings::UF_COMPANY_IS_CHECK_DA_DA_TA => true
         ];
         if($country) {
             if($UFCountry = $userFields[Settings::UF_COMPANY_COUNTRY]) {
